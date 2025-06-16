@@ -1,0 +1,85 @@
+============================================================
+         HƯỚNG DẪN THIẾT LẬP HỆ THỐNG LOGIN/REGISTER
+============================================================
+
+1. CẤU TRÚC FILES ĐÃ TẠO:
+   - Scripts/UserData.cs         : Data classes cho user và API responses
+   - Scripts/APIManager.cs       : Quản lý tất cả API calls
+   - Scripts/LoginManager.cs     : Quản lý UI và logic login
+   - Scripts/RegisterManager.cs  : Quản lý UI và logic register
+   - Scripts/AuthenticationSystem.cs : Hệ thống chính quản lý authentication
+   - Scenes/Register.unity       : Scene đăng ký mới
+
+2. THIẾT LẬP TRONG UNITY EDITOR (TỰ ĐỘNG):
+
+   A. SCENE LOGIN:
+      - Mở scene Login.unity
+      - Tạo empty GameObject và add script "LoginUISetup"
+      - Khi chạy scene, UI sẽ được tạo tự động!
+      - UI tự động bao gồm: Email input, Password input, Login button, Register button, Status text, Loading panel
+
+   B. SCENE REGISTER:
+      - Mở scene Register.unity
+      - Tạo empty GameObject và add script "RegisterUISetup"  
+      - Khi chạy scene, UI sẽ được tạo tự động!
+      - UI tự động bao gồm: Email input, Password input, Confirm password input, Register button, Login button, Status text, Loading panel
+
+   C. CẤU HÌNH API:
+      - Mở script "APIManager.cs"
+      - Thay đổi dòng: public string baseURL = "http://localhost:8000/api";
+      - Thay bằng URL server của bạn
+
+3. CẤU HÌNH BUILD SETTINGS:
+   - File -> Build Settings
+   - Add scenes theo thứ tự:
+     0. Login
+     1. Register  
+     2. Game (scene chính của game)
+
+4. API ENDPOINTS ĐƯỢC SỬ DỤNG:
+   - POST /api/login
+     Body: {"email": "user@example.com", "password": "password123"}
+   
+   - POST /api/register  
+     Body: {"email": "user@example.com", "password": "password123", "password_confirmation": "password123"}
+   
+   - GET /api/user
+     Headers: Authorization: Bearer {token}
+
+5. RESPONSE FORMAT EXPECTED:
+   - Login/Register Success:
+     {
+       "success": true,
+       "message": "Login successful",
+       "user": {
+         "id": 1,
+         "email": "user@example.com",
+         "name": "User Name"
+       },
+       "token": "jwt_token_here"
+     }
+   
+   - Error:
+     {
+       "success": false,
+       "message": "Invalid credentials"
+     }
+
+6. SỬ DỤNG TRONG CODE:
+   - Kiểm tra user đã login: AuthenticationSystem.Instance.IsUserLoggedIn()
+   - Lấy email hiện tại: AuthenticationSystem.Instance.GetCurrentUserEmail()
+   - Logout: AuthenticationSystem.Instance.Logout()
+   - API calls: APIManager.Instance.Login(email, password, callback)
+
+7. GHI CHÚ QUAN TRỌNG:
+   - Thay đổi baseURL trong APIManager.cs để trỏ đến server của bạn
+   - Token được lưu trong PlayerPrefs, tự động load khi restart game
+   - Hệ thống tự động validate token khi khởi động
+   - Tất cả API calls đều async và có error handling
+
+8. TESTING:
+   - Sử dụng Context Menu "Test Login" và "Test Register" trong các Manager scripts
+   - Kiểm tra Console log để debug
+   - Test với Postman trước để đảm bảo API hoạt động
+
+============================================================ 

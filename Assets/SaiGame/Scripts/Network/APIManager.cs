@@ -4,6 +4,7 @@ using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 using System;
 using System.Text;
+using SaiGame.Enums;
 
 public class APIManager : SaiSingleton<APIManager>
 {
@@ -33,15 +34,8 @@ public class APIManager : SaiSingleton<APIManager>
     [SerializeField] protected long tokenExpiresAt = 0;  // Unix timestamp
     [SerializeField] protected int tokenExpiresIn = 0;   // Seconds
     
-    // Enum để chọn loại storage
-    public enum TokenStorageType
-    {
-        EncryptedPlayerPrefs,  // Mặc định - sử dụng PlayerPrefs với mã hóa
-        EncryptedFile          // Sử dụng File system với mã hóa
-    }
-    
     [Header("Game Info")]
-    [SerializeField] protected string gameId = ""; // UUID, chỉnh trong Inspector
+    [SerializeField] protected string gameId = "68482e25731d20624900f952"; // UUID, chỉnh trong Inspector
     public string GameId => gameId;
     
     protected override void Awake()

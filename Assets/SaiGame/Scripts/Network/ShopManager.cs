@@ -13,6 +13,8 @@ public class ShopManager : MonoBehaviour
     private List<ShopData> shopList = new List<ShopData>();
     public List<ShopData> ShopList => shopList;
 
+    public event System.Action<List<ShopData>> OnShopListChanged;
+
     [ContextMenu("Fetch Shop List")]
     public void FetchShopList()
     {
@@ -32,11 +34,13 @@ public class ShopManager : MonoBehaviour
         if (result != null && result.data != null)
         {
             shopList = result.data;
+            OnShopListChanged?.Invoke(shopList);
         }
         else
         {
             Debug.LogWarning("No shop data found in response.");
             shopList = new List<ShopData>();
+            OnShopListChanged?.Invoke(shopList);
         }
     }
 

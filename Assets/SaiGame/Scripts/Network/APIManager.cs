@@ -4,19 +4,21 @@ using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 using System;
 using System.Text;
+using SaiGame.Enums;
 
 public class APIManager : SaiSingleton<APIManager>
 {
     [Header("API Configuration")]
     public string baseURL = "https://local-api.saigame.studio/api"; // Thay đổi URL phù hợp với server của bạn
-    
+    [SerializeField] protected bool showDebugLog = true;
+
     [Header("Token Storage Configuration")]
     [SerializeField] private TokenStorageType storageType = TokenStorageType.EncryptedPlayerPrefs;
-    
+
     [Header("Remembered Login")]
     [SerializeField] private string rememberedEmail = "";
     [SerializeField] private bool rememberEmailEnabled = true;
-    
+
     [Header("Token Information (Debug)")]
     [SerializeField] protected string currentTokenDisplay = "";
     [SerializeField] protected bool hasValidTokenDisplay = false;
@@ -32,30 +34,23 @@ public class APIManager : SaiSingleton<APIManager>
     [SerializeField] protected string currentToken = "";
     [SerializeField] protected long tokenExpiresAt = 0;  // Unix timestamp
     [SerializeField] protected int tokenExpiresIn = 0;   // Seconds
-    
-    // Enum để chọn loại storage
-    public enum TokenStorageType
-    {
-        EncryptedPlayerPrefs,  // Mặc định - sử dụng PlayerPrefs với mã hóa
-        EncryptedFile          // Sử dụng File system với mã hóa
-    }
-    
+
     [Header("Game Info")]
-    [SerializeField] protected string gameId = ""; // UUID, chỉnh trong Inspector
+    [SerializeField] protected string gameId = "6851748a31d31c1589071055"; // UUID, chỉnh trong Inspector
     public string GameId => gameId;
-    
+
     protected override void Awake()
     {
         base.Awake();
-        
+
         // Đảm bảo APIManager không bị destroy khi chuyển scene
         DontDestroyOnLoad(gameObject);
-        
+
         InitializeTokenStorage();
         LoadSavedToken();
         UpdateTokenDisplayInfo();
     }
-    
+
     private void LoadSavedToken()
     {
         if (tokenStorage == null)
@@ -70,11 +65,11 @@ public class APIManager : SaiSingleton<APIManager>
             tokenExpiresAt = GetTokenExpireTime(savedToken);
         }
     }
-    
+
     // Removed OnValidate to prevent automatic token checking spam
-    
+
     // Removed automatic token checking to prevent spam logs
-    
+
     /// <summary>
     /// Cập nhật thông tin hiển thị token trong Inspector
     /// </summary>
@@ -84,40 +79,40 @@ public class APIManager : SaiSingleton<APIManager>
         {
             InitializeTokenStorage();
         }
-        
+
         // Load remembered email if empty
         if (rememberEmailEnabled && string.IsNullOrEmpty(rememberedEmail) && Application.isPlaying)
         {
             rememberedEmail = PlayerPrefs.GetString("RememberedEmail", "");
         }
-        
+
         // Tránh vòng lặp vô hạn bằng cách không gọi GetAuthToken() từ đây
         string displayToken = currentToken;
         if (string.IsNullOrEmpty(displayToken) && Application.isPlaying && tokenStorage != null)
         {
             displayToken = tokenStorage.GetToken(); // Gọi trực tiếp tokenStorage thay vì GetAuthToken()
-            
+
             // Nếu có token từ storage, cố gắng lấy expire time từ JWT
             if (!string.IsNullOrEmpty(displayToken) && tokenExpiresAt == 0)
             {
                 tokenExpiresAt = GetTokenExpireTime(displayToken);
             }
         }
-        
+
         currentTokenDisplay = string.IsNullOrEmpty(displayToken) ? "No token" : displayToken;
         hasValidTokenDisplay = !string.IsNullOrEmpty(displayToken); // Chỉ kiểm tra token có tồn tại, không kiểm tra expiration
         tokenStorageTypeDisplay = storageType.ToString();
         tokenLengthDisplay = string.IsNullOrEmpty(displayToken) ? 0 : displayToken.Length;
 
-        
+
         // Tính toán thời gian còn lại và trạng thái expired
         if (tokenExpiresAt > 0)
         {
             long currentTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             long timeLeft = tokenExpiresAt - currentTimestamp;
-            
+
             isTokenExpired = timeLeft <= 0;
-            
+
             if (timeLeft > 0)
             {
                 TimeSpan timeSpan = TimeSpan.FromSeconds(timeLeft);
@@ -144,15 +139,15 @@ public class APIManager : SaiSingleton<APIManager>
             isTokenExpired = false;
             timeUntilExpire = "N/A";
         }
-        
+
         // Ẩn một phần token để bảo mật (chỉ hiển thị 10 ký tự đầu và cuối)
         if (!string.IsNullOrEmpty(currentTokenDisplay) && currentTokenDisplay != "No token" && currentTokenDisplay.Length > 20)
         {
-            currentTokenDisplay = currentTokenDisplay.Substring(0, 10) + "..." + 
+            currentTokenDisplay = currentTokenDisplay.Substring(0, 10) + "..." +
                                 currentTokenDisplay.Substring(currentTokenDisplay.Length - 10);
         }
     }
-    
+
     /// <summary>
     /// Khởi tạo hệ thống lưu trữ token dựa trên cấu hình
     /// </summary>
@@ -163,18 +158,18 @@ public class APIManager : SaiSingleton<APIManager>
             case TokenStorageType.EncryptedPlayerPrefs:
                 tokenStorage = new EncryptedPlayerPrefsTokenStorage();
                 break;
-                
+
             case TokenStorageType.EncryptedFile:
                 tokenStorage = new EncryptedFileTokenStorage();
                 break;
-                
+
             default:
                 tokenStorage = new EncryptedPlayerPrefsTokenStorage();
                 Debug.LogWarning("Unknown storage type, defaulting to Encrypted PlayerPrefs");
                 break;
         }
     }
-    
+
     /// <summary>
     /// Lưu token với mã hóa (tính đa hình)
     /// </summary>
@@ -185,16 +180,16 @@ public class APIManager : SaiSingleton<APIManager>
         {
             InitializeTokenStorage();
         }
-        
+
         currentToken = token;
         tokenStorage.SaveToken(token);
-        
+
         // Parse JWT để lấy expire time từ token
         tokenExpiresAt = GetTokenExpireTime(token);
-        
+
         UpdateTokenDisplayInfo();
     }
-    
+
     /// <summary>
     /// Lưu token cùng với thông tin expire từ API response
     /// </summary>
@@ -207,15 +202,15 @@ public class APIManager : SaiSingleton<APIManager>
         {
             InitializeTokenStorage();
         }
-        
+
         currentToken = token;
         tokenExpiresAt = expiresAt;
         tokenExpiresIn = expiresIn;
-        
+
         tokenStorage.SaveToken(token);
         UpdateTokenDisplayInfo();
     }
-    
+
     /// <summary>
     /// Lấy token đã được giải mã (tính đa hình)
     /// </summary>
@@ -226,11 +221,11 @@ public class APIManager : SaiSingleton<APIManager>
         {
             InitializeTokenStorage();
         }
-        
+
         if (string.IsNullOrEmpty(currentToken))
         {
             currentToken = tokenStorage.GetToken();
-            
+
             // Nếu load token từ storage và chưa có expire info, parse từ JWT
             if (!string.IsNullOrEmpty(currentToken) && tokenExpiresAt == 0)
             {
@@ -241,7 +236,7 @@ public class APIManager : SaiSingleton<APIManager>
 
         return currentToken;
     }
-    
+
     /// <summary>
     /// Xóa token (tính đa hình)
     /// </summary>
@@ -251,14 +246,14 @@ public class APIManager : SaiSingleton<APIManager>
         {
             InitializeTokenStorage();
         }
-        
+
         currentToken = "";
         tokenExpiresAt = 0;
         tokenExpiresIn = 0;
         tokenStorage.ClearToken();
         UpdateTokenDisplayInfo();
     }
-    
+
     /// <summary>
     /// Kiểm tra xem có token hợp lệ không
     /// </summary>
@@ -269,10 +264,10 @@ public class APIManager : SaiSingleton<APIManager>
         {
             InitializeTokenStorage();
         }
-        
+
         return tokenStorage.HasToken();
     }
-    
+
     /// <summary>
     /// Thay đổi phương thức lưu trữ token (Runtime)
     /// Cho phép developer dễ dàng chuyển đổi giữa các phương thức lưu trữ
@@ -282,30 +277,30 @@ public class APIManager : SaiSingleton<APIManager>
     {
         if (storageType == newStorageType)
         {
-            Debug.Log($"Already using {newStorageType}");
+            Debug.LogWarning($"Already using {newStorageType}");
             return;
         }
-        
+
         // Lưu token hiện tại
         string existingToken = GetAuthToken();
-        
+
         // Xóa token cũ
         ClearAuthToken();
-        
+
         // Thay đổi storage type
         storageType = newStorageType;
         InitializeTokenStorage();
-        
+
         // Lưu lại token với storage mới
         if (!string.IsNullOrEmpty(existingToken))
         {
             SetAuthToken(existingToken);
             Debug.Log($"Token migrated to {newStorageType}");
         }
-        
+
         UpdateTokenDisplayInfo();
     }
-    
+
     // Login API Call
     public void Login(string email, string password, Action<AuthResponse> onComplete)
     {
@@ -314,8 +309,9 @@ public class APIManager : SaiSingleton<APIManager>
             email = email,
             password = password
         };
-        
-        StartCoroutine(PostRequest("/login", loginData, (AuthResponse response) => {
+
+        StartCoroutine(PostRequest("/login", loginData, (AuthResponse response) =>
+        {
             if (response != null && !string.IsNullOrEmpty(response.token))
             {
                 // Lưu token với thông tin expire
@@ -324,7 +320,7 @@ public class APIManager : SaiSingleton<APIManager>
             onComplete?.Invoke(response);
         }));
     }
-    
+
     // Login API Call với Token Response format
     public void LoginWithToken(string email, string password, Action<TokenResponse> onComplete)
     {
@@ -333,8 +329,9 @@ public class APIManager : SaiSingleton<APIManager>
             email = email,
             password = password
         };
-        
-        StartCoroutine(PostRequest("/login", loginData, (TokenResponse response) => {
+
+        StartCoroutine(PostRequest("/login", loginData, (TokenResponse response) =>
+        {
             if (response != null && !string.IsNullOrEmpty(response.token))
             {
                 // Lưu token với thông tin expire
@@ -343,7 +340,7 @@ public class APIManager : SaiSingleton<APIManager>
             onComplete?.Invoke(response);
         }));
     }
-    
+
     // Register API Call  
     public void Register(string email, string password, string passwordConfirmation, Action<AuthResponse> onComplete)
     {
@@ -353,8 +350,9 @@ public class APIManager : SaiSingleton<APIManager>
             password = password,
             password_confirmation = passwordConfirmation
         };
-        
-        StartCoroutine(PostRequest("/register", registerData, (AuthResponse response) => {
+
+        StartCoroutine(PostRequest("/register", registerData, (AuthResponse response) =>
+        {
             if (response != null && !string.IsNullOrEmpty(response.token))
             {
                 // Lưu token với thông tin expire
@@ -363,7 +361,7 @@ public class APIManager : SaiSingleton<APIManager>
             onComplete?.Invoke(response);
         }));
     }
-    
+
     // Register API Call với Token Response format
     public void RegisterWithToken(string email, string password, string passwordConfirmation, Action<TokenResponse> onComplete)
     {
@@ -373,8 +371,9 @@ public class APIManager : SaiSingleton<APIManager>
             password = password,
             password_confirmation = passwordConfirmation
         };
-        
-        StartCoroutine(PostRequest("/register", registerData, (TokenResponse response) => {
+
+        StartCoroutine(PostRequest("/register", registerData, (TokenResponse response) =>
+        {
             if (response != null && !string.IsNullOrEmpty(response.token))
             {
                 // Lưu token với thông tin expire
@@ -383,50 +382,51 @@ public class APIManager : SaiSingleton<APIManager>
             onComplete?.Invoke(response);
         }));
     }
-    
+
     // Get User Profile
     public void GetUserProfile(Action<UserData> onComplete)
     {
         StartCoroutine(GetRequest("/user", onComplete));
     }
-    
+
     // Verify Token - Check if current token is valid and get a new one if needed
     public void VerifyToken(Action<TokenInfoResponse> onComplete)
     {
         StartCoroutine(GetRequest("/auth/token-info", onComplete));
     }
-    
+
     // Generic POST request
     private IEnumerator PostRequest<T>(string endpoint, object data, Action<T> onComplete)
     {
+
         string url = baseURL + endpoint;
         string jsonData = JsonUtility.ToJson(data);
-        
+
         using (UnityWebRequest request = new UnityWebRequest(url, "POST"))
         {
             byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonData);
             request.uploadHandler = new UploadHandlerRaw(bodyRaw);
             request.downloadHandler = new DownloadHandlerBuffer();
-            Debug.Log("<b>POST:</b>" + endpoint);
+            if (this.showDebugLog) Debug.Log("<b>POST:</b>" + endpoint);
 
             // Set headers
             request.SetRequestHeader("Content-Type", "application/json");
             request.SetRequestHeader("Accept", "application/json");
-            
+
             // Add auth token if available
             if (!string.IsNullOrEmpty(GetAuthToken()))
             {
                 request.SetRequestHeader("Authorization", "Bearer " + GetAuthToken());
             }
-            
+
             yield return request.SendWebRequest();
-            
+
             if (request.result == UnityWebRequest.Result.Success)
             {
                 try
                 {
                     string responseText = request.downloadHandler.text;
-                    
+
                     T response = JsonUtility.FromJson<T>(responseText);
                     onComplete?.Invoke(response);
                 }
@@ -444,18 +444,18 @@ public class APIManager : SaiSingleton<APIManager>
             }
         }
     }
-    
+
     // Generic GET request
     private IEnumerator GetRequest<T>(string endpoint, Action<T> onComplete)
     {
         string url = baseURL + endpoint;
-        
+
         using (UnityWebRequest request = UnityWebRequest.Get(url))
         {
             // Set headers
             request.SetRequestHeader("Content-Type", "application/json");
             request.SetRequestHeader("Accept", "application/json");
-            Debug.Log("<b>GET:</b>" + endpoint);
+            if (this.showDebugLog) Debug.Log("<b>GET:</b>" + endpoint);
 
             string token = GetAuthToken();
 
@@ -464,7 +464,7 @@ public class APIManager : SaiSingleton<APIManager>
             {
                 request.SetRequestHeader("Authorization", "Bearer " + token);
             }
-            
+
             yield return request.SendWebRequest();
 
             if (request.result == UnityWebRequest.Result.Success)
@@ -472,7 +472,7 @@ public class APIManager : SaiSingleton<APIManager>
                 try
                 {
                     string responseText = request.downloadHandler.text;
-                    
+
                     T response = JsonUtility.FromJson<T>(responseText);
                     onComplete?.Invoke(response);
                 }
@@ -489,7 +489,7 @@ public class APIManager : SaiSingleton<APIManager>
             }
         }
     }
-    
+
     /// <summary>
     /// Parse JWT token để lấy thông tin expire time
     /// </summary>
@@ -499,45 +499,45 @@ public class APIManager : SaiSingleton<APIManager>
     {
         if (string.IsNullOrEmpty(token))
             return 0;
-        
+
         try
         {
             // JWT có format: header.payload.signature
             string[] parts = token.Split('.');
             if (parts.Length != 3)
                 return 0;
-            
+
             // Decode payload (base64url)
             string payload = parts[1];
-            
+
             // Thêm padding nếu cần
             int padding = 4 - (payload.Length % 4);
             if (padding != 4)
             {
                 payload += new string('=', padding);
             }
-            
+
             // Chuyển base64url sang base64 thông thường
             payload = payload.Replace('-', '+').Replace('_', '/');
-            
+
             // Decode base64
             byte[] payloadBytes = Convert.FromBase64String(payload);
             string payloadJson = Encoding.UTF8.GetString(payloadBytes);
-            
+
             // Parse JSON đơn giản để lấy exp
             // Tìm "exp":
             string expKey = "\"exp\":";
             int expIndex = payloadJson.IndexOf(expKey);
             if (expIndex == -1)
                 return 0;
-            
+
             int startIndex = expIndex + expKey.Length;
             int endIndex = payloadJson.IndexOfAny(new char[] { ',', '}' }, startIndex);
             if (endIndex == -1)
                 endIndex = payloadJson.Length;
-            
+
             string expValue = payloadJson.Substring(startIndex, endIndex - startIndex).Trim();
-            
+
             if (long.TryParse(expValue, out long expTimestamp))
             {
                 return expTimestamp;
@@ -547,11 +547,11 @@ public class APIManager : SaiSingleton<APIManager>
         {
             Debug.LogWarning($"Failed to parse JWT token: {e.Message}");
         }
-        
+
         return 0;
     }
-    
-    
+
+
     /// <summary>
     /// Lưu email để ghi nhớ cho lần đăng nhập tiếp theo
     /// </summary>
@@ -565,7 +565,7 @@ public class APIManager : SaiSingleton<APIManager>
             PlayerPrefs.Save();
         }
     }
-    
+
     /// <summary>
     /// Lấy email đã ghi nhớ
     /// </summary>
@@ -582,7 +582,7 @@ public class APIManager : SaiSingleton<APIManager>
         }
         return "";
     }
-    
+
     /// <summary>
     /// Xóa email đã ghi nhớ
     /// </summary>
@@ -591,9 +591,9 @@ public class APIManager : SaiSingleton<APIManager>
         rememberedEmail = "";
         PlayerPrefs.DeleteKey("RememberedEmail");
         PlayerPrefs.Save();
-        Debug.Log("Remembered email cleared");
+        if (this.showDebugLog) Debug.Log("Remembered email cleared");
     }
-    
+
     /// <summary>
     /// Logout hoàn chỉnh: Gọi API logout, xóa token và chuyển về scene login
     /// </summary>
@@ -602,7 +602,7 @@ public class APIManager : SaiSingleton<APIManager>
         // Gọi API logout trước khi xóa token
         StartCoroutine(LogoutCoroutine());
     }
-    
+
     /// <summary>
     /// Coroutine thực hiện logout process
     /// </summary>
@@ -612,30 +612,30 @@ public class APIManager : SaiSingleton<APIManager>
         if (HasValidToken())
         {
             string url = baseURL + "/auth/logout";
-            
+
             using (UnityWebRequest request = new UnityWebRequest(url, "POST"))
             {
                 request.downloadHandler = new DownloadHandlerBuffer();
-                
+
                 // Set headers
                 request.SetRequestHeader("Content-Type", "application/json");
                 request.SetRequestHeader("Accept", "application/json");
-                
+
                 // Add auth token
                 string token = GetAuthToken();
                 if (!string.IsNullOrEmpty(token))
                 {
                     request.SetRequestHeader("Authorization", "Bearer " + token);
                 }
-                
+
                 yield return request.SendWebRequest();
-                
+
                 if (request.result == UnityWebRequest.Result.Success)
                 {
                     try
                     {
                         string responseText = request.downloadHandler.text;
-                        
+
                         // Parse response để lấy message
                         var response = JsonUtility.FromJson<LogoutResponse>(responseText);
                     }
@@ -653,14 +653,14 @@ public class APIManager : SaiSingleton<APIManager>
                 }
             }
         }
-        
+
         // Xóa token local
         ClearAuthToken();
-        
+
         // Chuyển về scene login
         NavigateToLoginScene();
     }
-    
+
     /// <summary>
     /// Chuyển về scene login
     /// </summary>
@@ -685,7 +685,7 @@ public class APIManager : SaiSingleton<APIManager>
             }
         }
     }
-    
+
     /// <summary>
     /// Bật/tắt tính năng ghi nhớ email
     /// </summary>
@@ -698,7 +698,7 @@ public class APIManager : SaiSingleton<APIManager>
             ClearRememberedEmail();
         }
     }
-    
+
     /// <summary>
     /// Gọi API tạo account cho user hiện tại (sau khi login/register thành công)
     /// </summary>
@@ -707,4 +707,4 @@ public class APIManager : SaiSingleton<APIManager>
         string endpoint = $"/games/{gameId}/register/profiles";
         StartCoroutine(PostRequest<UserProfileResponse>(endpoint, null, onComplete));
     }
-} 
+}

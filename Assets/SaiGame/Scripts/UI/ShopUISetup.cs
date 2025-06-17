@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using UnityEngine.EventSystems;
 using TMPro;
+using System.Collections.Generic;
 
 public class ShopUISetup : SaiBehaviour
 {
@@ -12,6 +13,7 @@ public class ShopUISetup : SaiBehaviour
     [Header("UI References")]
     public Button logoutButton;
     public Button backToMainMenuButton;
+    public Button refreshButton;
     public ScrollRect shopListScrollView;
     public RectTransform shopListContent;
     public ScrollRect itemListScrollView;
@@ -20,9 +22,16 @@ public class ShopUISetup : SaiBehaviour
     [Header("Scene Names")]
     public string mainMenuSceneName = SceneNames.MAIN_MENU;
 
+    private ShopManager shopManager;
+
     protected override void Start()
     {
         base.Start();
+        shopManager = FindFirstObjectByType<ShopManager>();
+        if (shopManager != null)
+        {
+            shopManager.OnShopListChanged += OnShopListChanged;
+        }
         if (autoSetup)
         {
             CreateShopUI();
@@ -77,26 +86,33 @@ public class ShopUISetup : SaiBehaviour
         bgImage.color = new Color(0.1f, 0.1f, 0.2f, 0.8f);
         SetFullScreen(bgPanel.GetComponent<RectTransform>());
 
-        // Top Left Panel for Logout & Back
+        // Top Left Panel for Logout, Back & Refresh
         GameObject topLeftPanel = CreateUIElement("TopLeftPanel", canvasGO.transform);
         RectTransform topLeftRect = topLeftPanel.GetComponent<RectTransform>();
         topLeftRect.anchorMin = new Vector2(0, 1);
         topLeftRect.anchorMax = new Vector2(0, 1);
         topLeftRect.pivot = new Vector2(0, 1);
-        topLeftRect.anchoredPosition = new Vector2(20, -20);
-        topLeftRect.sizeDelta = new Vector2(400, 60);
+        topLeftRect.anchoredPosition = new Vector2(20, 0);
+        topLeftRect.sizeDelta = new Vector2(500, 60);
 
         // Back to MainMenu Button
         GameObject backBtn = CreateButton("BackToMainMenuButton", "MAIN MENU", topLeftPanel.transform);
         RectTransform backRect = backBtn.GetComponent<RectTransform>();
-        backRect.anchoredPosition = new Vector2(100, -30);
-        backRect.sizeDelta = new Vector2(180, 50);
+        backRect.anchoredPosition = new Vector2(90, -30);
+        backRect.sizeDelta = new Vector2(120, 50);
         backToMainMenuButton = backBtn.GetComponent<Button>();
+
+        // Refresh Button
+        GameObject refreshBtn = CreateButton("RefreshButton", "REFRESH", topLeftPanel.transform);
+        RectTransform refreshRect = refreshBtn.GetComponent<RectTransform>();
+        refreshRect.anchoredPosition = new Vector2(230, -30);
+        refreshRect.sizeDelta = new Vector2(120, 50);
+        refreshButton = refreshBtn.GetComponent<Button>();
 
         // Logout Button
         GameObject logoutBtn = CreateButton("LogoutButton", "LOGOUT", topLeftPanel.transform);
         RectTransform logoutRect = logoutBtn.GetComponent<RectTransform>();
-        logoutRect.anchoredPosition = new Vector2(300, -30);
+        logoutRect.anchoredPosition = new Vector2(370, -30);
         logoutRect.sizeDelta = new Vector2(100, 50);
         logoutButton = logoutBtn.GetComponent<Button>();
         Button logoutBtnComp = logoutBtn.GetComponent<Button>();
@@ -116,13 +132,13 @@ public class ShopUISetup : SaiBehaviour
         mainRect.sizeDelta = new Vector2(1200, 900);
 
         // Shop List (ScrollView)
-        GameObject shopScrollGO = CreateScrollView("ShopListScrollView", mainPanel.transform, out RectTransform shopContentRect);
+        GameObject shopScrollGO = CreateScrollView("ShopListScrollView", mainPanel.transform, out RectTransform shopContentRect, true);
         RectTransform shopScrollRect = shopScrollGO.GetComponent<RectTransform>();
         shopScrollRect.anchorMin = new Vector2(0.5f, 1f);
         shopScrollRect.anchorMax = new Vector2(0.5f, 1f);
         shopScrollRect.pivot = new Vector2(0.5f, 1f);
         shopScrollRect.anchoredPosition = new Vector2(0, -60);
-        shopScrollRect.sizeDelta = new Vector2(1000, 200);
+        shopScrollRect.sizeDelta = new Vector2(1000, 160);
         shopListScrollView = shopScrollGO.GetComponent<ScrollRect>();
         shopListContent = shopContentRect;
 
@@ -142,6 +158,7 @@ public class ShopUISetup : SaiBehaviour
         shopUISetup.autoSetup = false;
         shopUISetup.logoutButton = logoutButton;
         shopUISetup.backToMainMenuButton = backToMainMenuButton;
+        shopUISetup.refreshButton = refreshButton;
         shopUISetup.shopListScrollView = shopListScrollView;
         shopUISetup.shopListContent = shopListContent;
         shopUISetup.itemListScrollView = itemListScrollView;
@@ -156,6 +173,8 @@ public class ShopUISetup : SaiBehaviour
             logoutButton.onClick.AddListener(OnLogoutClick);
         if (backToMainMenuButton != null)
             backToMainMenuButton.onClick.AddListener(OnBackToMainMenuClick);
+        if (refreshButton != null)
+            refreshButton.onClick.AddListener(OnRefreshClick);
     }
 
     private void OnLogoutClick()
@@ -166,6 +185,42 @@ public class ShopUISetup : SaiBehaviour
     private void OnBackToMainMenuClick()
     {
         SceneManager.LoadScene(mainMenuSceneName);
+    }
+
+    private void OnRefreshClick()
+    {
+        var shopManager = FindFirstObjectByType<ShopManager>();
+        if (shopManager != null)
+        {
+            shopManager.FetchShopList();
+        }
+        else
+        {
+            Debug.LogWarning("ShopManager not found in scene!");
+        }
+    }
+
+    private void OnShopListChanged(List<ShopData> shopList)
+    {
+        // Xóa các item cũ trong shopListContent
+        foreach (Transform child in shopListContent)
+        {
+            Destroy(child.gameObject);
+        }
+        // Tạo UI mới cho từng shop
+        foreach (var shop in shopList)
+        {
+            GameObject shopBtn = CreateButton($"Shop_{shop.id}", shop.name, shopListContent);
+            RectTransform btnRect = shopBtn.GetComponent<RectTransform>();
+            btnRect.sizeDelta = new Vector2(160, 160);
+            // Gán sự kiện click để chọn shop trong ShopManager
+            shopBtn.GetComponent<Button>().onClick.AddListener(() => {
+                if (shopManager != null)
+                {
+                    shopManager.SelectShopById(shop.id);
+                }
+            });
+        }
     }
 
     GameObject CreateUIElement(string name, Transform parent)
@@ -208,14 +263,14 @@ public class ShopUISetup : SaiBehaviour
         return go;
     }
 
-    GameObject CreateScrollView(string name, Transform parent, out RectTransform contentRect)
+    GameObject CreateScrollView(string name, Transform parent, out RectTransform contentRect, bool horizontal = false)
     {
         GameObject scrollGO = CreateUIElement(name, parent);
         Image bg = scrollGO.AddComponent<Image>();
         bg.color = new Color(0.15f, 0.15f, 0.25f, 0.8f);
         ScrollRect scrollRect = scrollGO.AddComponent<ScrollRect>();
-        scrollRect.horizontal = false;
-        scrollRect.vertical = true;
+        scrollRect.horizontal = horizontal;
+        scrollRect.vertical = !horizontal;
         // Viewport
         GameObject viewport = CreateUIElement("Viewport", scrollGO.transform);
         Image viewportImg = viewport.AddComponent<Image>();
@@ -231,11 +286,27 @@ public class ShopUISetup : SaiBehaviour
         // Content
         GameObject content = CreateUIElement("Content", viewport.transform);
         contentRect = content.GetComponent<RectTransform>();
-        contentRect.anchorMin = new Vector2(0, 1);
-        contentRect.anchorMax = new Vector2(1, 1);
-        contentRect.pivot = new Vector2(0.5f, 1);
-        contentRect.anchoredPosition = Vector2.zero;
-        contentRect.sizeDelta = new Vector2(0, 600);
+        if (horizontal)
+        {
+            contentRect.anchorMin = new Vector2(0, 0);
+            contentRect.anchorMax = new Vector2(0, 1);
+            contentRect.pivot = new Vector2(0, 0.5f);
+            contentRect.anchoredPosition = Vector2.zero;
+            contentRect.sizeDelta = new Vector2(0, 0);
+            var layout = content.AddComponent<HorizontalLayoutGroup>();
+            layout.childForceExpandHeight = false;
+            layout.childForceExpandWidth = false;
+            layout.childAlignment = TextAnchor.MiddleLeft;
+            layout.spacing = 10;
+        }
+        else
+        {
+            contentRect.anchorMin = new Vector2(0, 1);
+            contentRect.anchorMax = new Vector2(1, 1);
+            contentRect.pivot = new Vector2(0.5f, 1);
+            contentRect.anchoredPosition = Vector2.zero;
+            contentRect.sizeDelta = new Vector2(0, 600);
+        }
         scrollRect.content = contentRect;
         return scrollGO;
     }
@@ -246,5 +317,13 @@ public class ShopUISetup : SaiBehaviour
         rect.anchorMax = Vector2.one;
         rect.offsetMin = Vector2.zero;
         rect.offsetMax = Vector2.zero;
+    }
+
+    private void OnDestroy()
+    {
+        if (shopManager != null)
+        {
+            shopManager.OnShopListChanged -= OnShopListChanged;
+        }
     }
 } 

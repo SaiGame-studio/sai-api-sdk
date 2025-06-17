@@ -31,6 +31,7 @@ public class ShopUISetup : SaiBehaviour
         if (shopManager != null)
         {
             shopManager.OnShopListChanged += OnShopListChanged;
+            shopManager.OnShopItemsChanged += OnShopItemsChanged;
         }
         if (autoSetup)
         {
@@ -223,6 +224,43 @@ public class ShopUISetup : SaiBehaviour
         }
     }
 
+    private void OnShopItemsChanged(List<ItemProfileData> itemProfiles)
+    {
+        // Xóa các item cũ trong itemListContent
+        foreach (Transform child in itemListContent)
+        {
+            Destroy(child.gameObject);
+        }
+        // Đảm bảo có GridLayoutGroup cho itemListContent
+        var grid = itemListContent.GetComponent<UnityEngine.UI.GridLayoutGroup>();
+        if (grid == null)
+        {
+            grid = itemListContent.gameObject.AddComponent<UnityEngine.UI.GridLayoutGroup>();
+        }
+        grid.cellSize = new Vector2(160, 160);
+        grid.spacing = new Vector2(5, 5);
+        grid.constraint = UnityEngine.UI.GridLayoutGroup.Constraint.FixedColumnCount;
+        grid.constraintCount = 3;
+        grid.padding = new RectOffset(5, 5, 5, 5);
+        grid.childAlignment = TextAnchor.UpperLeft;
+
+        foreach (var item in itemProfiles)
+        {
+            GameObject itemBtn = CreateButton($"Item_{item.item_profile_id}", item.item_profile.name, itemListContent);
+            RectTransform rect = itemBtn.GetComponent<RectTransform>();
+            rect.sizeDelta = new Vector2(160, 160);
+            // Tooltip hoặc text phụ
+            string info = $"Type: {item.item_profile.type}\nPrice: {item.price_current} (Old: {item.price_old})\nID: {item.item_profile_id}";
+            var tooltip = CreateText("Info", info, itemBtn.transform, 12);
+            var tooltipRect = tooltip.GetComponent<RectTransform>();
+            tooltipRect.anchorMin = new Vector2(0, 0);
+            tooltipRect.anchorMax = new Vector2(1, 0);
+            tooltipRect.pivot = new Vector2(0.5f, 0);
+            tooltipRect.anchoredPosition = new Vector2(0, 10);
+            tooltipRect.sizeDelta = new Vector2(0, 60);
+        }
+    }
+
     GameObject CreateUIElement(string name, Transform parent)
     {
         GameObject go = new GameObject(name);
@@ -324,6 +362,7 @@ public class ShopUISetup : SaiBehaviour
         if (shopManager != null)
         {
             shopManager.OnShopListChanged -= OnShopListChanged;
+            shopManager.OnShopItemsChanged -= OnShopItemsChanged;
         }
     }
 } 

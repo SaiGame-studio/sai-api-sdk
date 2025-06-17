@@ -213,6 +213,13 @@ public class ShopUISetup : SaiBehaviour
             GameObject shopBtn = CreateButton($"Shop_{shop.id}", shop.name, shopListContent);
             RectTransform btnRect = shopBtn.GetComponent<RectTransform>();
             btnRect.sizeDelta = new Vector2(160, 160);
+            // Gán sự kiện click để chọn shop trong ShopManager
+            shopBtn.GetComponent<Button>().onClick.AddListener(() => {
+                if (shopManager != null)
+                {
+                    shopManager.SelectShopById(shop.id);
+                }
+            });
         }
     }
 

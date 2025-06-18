@@ -3,6 +3,7 @@ using System;
 [Serializable]
 public class ItemProfile
 {
+    public string id;
     public string name;
     public string code_name;
     public string status;

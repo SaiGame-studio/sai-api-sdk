@@ -195,6 +195,18 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1055822729905208099, guid: 45192b4401665724fbbd74ca57cd25ed, type: 3}
+      propertyPath: currentToken
+      value: 228|8K7AEBA8M0b5J4olttMpqJ1fe0URDjt4rULhF9rZ2f4cec35
+      objectReference: {fileID: 0}
+    - target: {fileID: 1055822729905208099, guid: 45192b4401665724fbbd74ca57cd25ed, type: 3}
+      propertyPath: rememberedEmail
+      value: 222@222.222
+      objectReference: {fileID: 0}
+    - target: {fileID: 1055822729905208099, guid: 45192b4401665724fbbd74ca57cd25ed, type: 3}
+      propertyPath: currentTokenDisplay
+      value: 228|8K7AEB...rZ2f4cec35
+      objectReference: {fileID: 0}
     - target: {fileID: 7176863583007664123, guid: 45192b4401665724fbbd74ca57cd25ed, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0

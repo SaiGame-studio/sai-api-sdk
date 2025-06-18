@@ -56,6 +56,30 @@ public class ShopManagerEditor : Editor
                 }
             }
 
+            // Hiển thị danh sách item của shop
+            EditorGUILayout.LabelField("Current Shop Items", EditorStyles.boldLabel);
+            if (shopManager.CurrentShopItems != null && shopManager.CurrentShopItems.Count > 0)
+            {
+                itemProfilesScrollPosition = EditorGUILayout.BeginScrollView(itemProfilesScrollPosition, GUILayout.Height(100));
+                foreach (var item in shopManager.CurrentShopItems)
+                {
+                    EditorGUILayout.BeginHorizontal();
+                    if (GUILayout.Button("Copy ID", GUILayout.Width(70)))
+                    {
+                        itemProfileId = item.item_profile.id;
+                        GUI.FocusControl(null); // Để cập nhật ngay vào field
+                    }
+                    EditorGUILayout.LabelField($"Name: {item.item_profile.name}", GUILayout.Width(250));
+                    EditorGUILayout.LabelField($"Price: {item.price_current}", GUILayout.Width(150));
+                    EditorGUILayout.EndHorizontal();
+                }
+                EditorGUILayout.EndScrollView();
+            }
+            else
+            {
+                EditorGUILayout.HelpBox("No Item", MessageType.Info);
+            }
+
             itemProfileId = EditorGUILayout.TextField("Item Profile ID", itemProfileId);
             number = EditorGUILayout.IntField("Number", number);
 

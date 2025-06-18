@@ -10,9 +10,14 @@ using UnityEditor;
 
 public class ShopManager : MonoBehaviour
 {
-    [Header("Shop List (Read Only)")]
+    [Header("Debug Settings")]
     [SerializeField] protected bool showDebugLog = true;
 
+    [Header("Auto Load Settings")]
+    [Tooltip("If enabled, Refresh will be automatically called when game authentication is successful")]
+    [SerializeField] protected bool autoLoad = false;
+
+    [Header("Shop List (Read Only)")]
     [SerializeField]
     private List<ShopData> shopList = new List<ShopData>();
     public List<ShopData> ShopList => shopList;
@@ -24,6 +29,42 @@ public class ShopManager : MonoBehaviour
 
     public event System.Action<List<ShopData>> OnShopListChanged;
     public event System.Action<List<ItemProfileData>> OnShopItemsChanged;
+
+    protected virtual void Start()
+    {
+        if (autoLoad && APIManager.Instance != null && APIManager.Instance.HasValidToken())
+        {
+            FetchShopList();
+        }
+    }
+
+    protected virtual void OnEnable()
+    {
+        if (APIManager.Instance != null)
+        {
+            APIManager.Instance.OnAuthenticationSuccess += OnAuthenticationSuccess;
+        }
+        else
+        {
+            Debug.LogWarning("ShopManager: APIManager.Instance is null in OnEnable");
+        }
+    }
+
+    protected virtual void OnDisable()
+    {
+        if (APIManager.Instance != null)
+        {
+            APIManager.Instance.OnAuthenticationSuccess -= OnAuthenticationSuccess;
+        }
+    }
+
+    private void OnAuthenticationSuccess()
+    {
+        if (autoLoad)
+        {
+            FetchShopList();
+        }
+    }
 
     [ContextMenu("Fetch Shop List")]
     public void FetchShopList()
@@ -167,7 +208,7 @@ public class ShopManager : MonoBehaviour
                 }
             }
 
-            if (GUILayout.Button("Load Shop"))
+            if (GUILayout.Button("Refresh Shops"))
             {
                 shopManager.FetchShopList();
             }

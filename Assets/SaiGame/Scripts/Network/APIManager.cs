@@ -28,6 +28,9 @@ public class APIManager : SaiSingleton<APIManager>
     [SerializeField] protected bool isTokenExpired = false;
     [SerializeField] protected string timeUntilExpire = "N/A";
 
+    // Events
+    public event System.Action OnAuthenticationSuccess;
+
     // Hệ thống lưu trữ token với tính đa hình
     [Header("Token")]
     private ITokenStorage tokenStorage;
@@ -336,6 +339,8 @@ public class APIManager : SaiSingleton<APIManager>
             {
                 // Lưu token với thông tin expire
                 SetAuthTokenWithExpire(response.token, response.expires_at, response.expires_in);
+                if (showDebugLog) Debug.Log("Login successful, triggering OnAuthenticationSuccess event");
+                OnAuthenticationSuccess?.Invoke();
             }
             onComplete?.Invoke(response);
         }));
@@ -378,6 +383,8 @@ public class APIManager : SaiSingleton<APIManager>
             {
                 // Lưu token với thông tin expire
                 SetAuthTokenWithExpire(response.token, response.expires_at, response.expires_in);
+                if (showDebugLog) Debug.Log("Register successful, triggering OnAuthenticationSuccess event");
+                OnAuthenticationSuccess?.Invoke();
             }
             onComplete?.Invoke(response);
         }));
@@ -392,7 +399,15 @@ public class APIManager : SaiSingleton<APIManager>
     // Verify Token - Check if current token is valid and get a new one if needed
     public void VerifyToken(Action<TokenInfoResponse> onComplete)
     {
-        StartCoroutine(GetRequest("/auth/token-info", onComplete));
+        StartCoroutine(GetRequest("/auth/token-info", (TokenInfoResponse response) =>
+        {
+            if (response != null && response.IsValid())
+            {
+                if (showDebugLog) Debug.Log("Token verification successful, triggering OnAuthenticationSuccess event");
+                OnAuthenticationSuccess?.Invoke();
+            }
+            onComplete?.Invoke(response);
+        }));
     }
 
     // Generic POST request

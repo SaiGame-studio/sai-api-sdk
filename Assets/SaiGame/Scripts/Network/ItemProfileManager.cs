@@ -7,14 +7,55 @@ using UnityEditor;
 
 public class ItemProfileManager : MonoBehaviour
 {
-    [Header("Item Profiles (Read Only)")]
+    [Header("Debug Settings")]
     [SerializeField] protected bool showDebugLog = true;
 
+    [Header("Auto Load Settings")]
+    [Tooltip("If enabled, Refresh will be automatically called when game authentication is successful")]
+    [SerializeField] protected bool autoLoad = false;
+
+    [Header("Item Profiles (Read Only)")]
     [SerializeField]
     private List<ItemProfileSimple> itemProfiles = new List<ItemProfileSimple>();
     public List<ItemProfileSimple> ItemProfiles => itemProfiles;
 
     public event System.Action<List<ItemProfileSimple>> OnItemProfilesChanged;
+
+    protected virtual void Start()
+    {
+        if (autoLoad && APIManager.Instance != null && APIManager.Instance.HasValidToken())
+        {
+            FetchItemProfiles();
+        }
+    }
+
+    protected virtual void OnEnable()
+    {
+        if (APIManager.Instance != null)
+        {
+            APIManager.Instance.OnAuthenticationSuccess += OnAuthenticationSuccess;
+        }
+        else
+        {
+            Debug.LogWarning("ItemProfileManager: APIManager.Instance is null in OnEnable");
+        }
+    }
+
+    protected virtual void OnDisable()
+    {
+        if (APIManager.Instance != null)
+        {
+            APIManager.Instance.OnAuthenticationSuccess -= OnAuthenticationSuccess;
+        }
+    }
+
+    private void OnAuthenticationSuccess()
+    {
+        if (autoLoad)
+        {
+            FetchItemProfiles();
+        }
+    }
 
     [ContextMenu("Fetch Item Profiles")]
     public void FetchItemProfiles()
@@ -61,7 +102,7 @@ public class ItemProfileManagerEditor : Editor
     {
         DrawDefaultInspector();
         ItemProfileManager manager = (ItemProfileManager)target;
-        if (GUILayout.Button("Refresh Item"))
+        if (GUILayout.Button("Refresh Items"))
         {
             manager.FetchItemProfiles();
         }

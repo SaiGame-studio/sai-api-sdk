@@ -70,7 +70,7 @@ public class PlayerItemManagerEditor : Editor
     {
         DrawDefaultInspector();
         PlayerItemManager manager = (PlayerItemManager)target;
-        if (GUILayout.Button("Refresh Item"))
+        if (GUILayout.Button("Refresh Items"))
         {
             manager.FetchPlayerItems();
         }

@@ -45,6 +45,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   showDebugLog: 1
+  autoLoad: 1
   itemProfiles: []
 --- !u!1 &4322041686660429257
 GameObject:
@@ -137,6 +138,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   showDebugLog: 1
+  autoLoad: 1
   shopList: []
   currentShopItems: []
   selectedShopIdForEditor: 

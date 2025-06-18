@@ -25,8 +25,14 @@ public class LoginUISetup : MonoBehaviour
     public string mainMenuSceneName = "2_MainMenu";
     public string registerSceneName = "0_Register";
 
+    // Flag để đảm bảo chỉ tìm APIManager một lần duy nhất
+    private bool hasTriedToFindAPIManager = false;
+
     void Start()
     {
+        // Tự động tìm và liên kết APIManager nếu chưa có
+        TryFindAndLinkAPIManager();
+
         if (autoSetup)
         {
             CreateLoginUI();
@@ -649,5 +655,33 @@ public class LoginUISetup : MonoBehaviour
         rect.anchorMax = Vector2.one;
         rect.offsetMin = Vector2.zero;
         rect.offsetMax = Vector2.zero;
+    }
+
+    /// <summary>
+    /// Tự động tìm và liên kết APIManager nếu chưa có liên kết
+    /// Chỉ thực hiện một lần duy nhất khi start game
+    /// </summary>
+    private void TryFindAndLinkAPIManager()
+    {
+        // Chỉ thực hiện nếu chưa có APIManager và chưa từng thử tìm
+        if (apiManager == null && !hasTriedToFindAPIManager)
+        {
+            hasTriedToFindAPIManager = true;
+            
+            Debug.Log("[LoginUISetup] APIManager not linked. Attempting to find APIManager in scene...");
+            
+            // Tìm APIManager trong scene
+            APIManager foundAPIManager = FindFirstObjectByType<APIManager>();
+            
+            if (foundAPIManager != null)
+            {
+                apiManager = foundAPIManager;
+                Debug.Log("[LoginUISetup] Successfully found and linked APIManager!");
+            }
+            else
+            {
+                Debug.LogError("[LoginUISetup] Failed to find APIManager in scene! Please ensure APIManager is present in the scene.");
+            }
+        }
     }
 }

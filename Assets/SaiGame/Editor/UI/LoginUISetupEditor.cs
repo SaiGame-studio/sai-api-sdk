@@ -74,62 +74,6 @@ public class LoginUISetupEditor : Editor
                 EditorGUILayout.HelpBox("APIManager not assigned!", MessageType.Warning);
             }
             
-            GUILayout.Space(5);
-            
-            // Test login form
-            EditorGUILayout.LabelField("Test Login Form:", EditorStyles.boldLabel);
-            
-            // Email field with sync button
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                testEmail = EditorGUILayout.TextField("Email:", testEmail);
-                if (GUILayout.Button("Sync", GUILayout.Width(40)))
-                {
-                    if (apiManager != null)
-                    {
-                        string remembered = apiManager.GetRememberedEmail();
-                        if (!string.IsNullOrEmpty(remembered))
-                        {
-                            testEmail = remembered;
-                            Debug.Log("[LoginUISetupEditor] Synced test email with Remembered Email.");
-                        }
-                        else
-                        {
-                            Debug.LogWarning("[LoginUISetupEditor] No Remembered Email to sync.");
-                        }
-                    }
-                }
-            }
-            
-            testPassword = EditorGUILayout.PasswordField("Password:", testPassword);
-            
-            GUILayout.Space(5);
-            
-            // Test login button - Màu xanh dương
-            GUI.backgroundColor = new Color(0.2f, 0.6f, 1f, 1f); // Xanh dương đẹp
-            if (GUILayout.Button("TEST LOGIN", GUILayout.Height(30)))
-            {
-                if (string.IsNullOrEmpty(testEmail) || string.IsNullOrEmpty(testPassword))
-                {
-                    Debug.LogWarning("[LoginUISetupEditor] Please enter both email and password.");
-                }
-                else if (apiManager != null)
-                {
-                    // Set the test values to UI if available
-                    if (loginUISetup.emailInput != null) loginUISetup.emailInput.text = testEmail;
-                    if (loginUISetup.passwordInput != null) loginUISetup.passwordInput.text = testPassword;
-                    
-                    // Call the login method
-                    loginUISetup.OnLoginClick();
-                    apiManager.SaveRememberedEmail(testEmail);
-                }
-                else
-                {
-                    Debug.LogError("[LoginUISetupEditor] APIManager not found!");
-                }
-            }
-            GUI.backgroundColor = Color.white;
-            
             GUILayout.Space(10);
             
             // Quick Actions Section + Go to Register

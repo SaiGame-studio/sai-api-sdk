@@ -1,9 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
 
 public class ItemProfileManager : MonoBehaviour
 {
@@ -92,20 +89,4 @@ public class ItemProfileManager : MonoBehaviour
         var coroutine = (IEnumerator)method.MakeGenericMethod(typeof(ItemProfileListResponse)).Invoke(APIManager.Instance, new object[] { endpoint, onComplete });
         yield return StartCoroutine(coroutine);
     }
-}
-
-#if UNITY_EDITOR
-[CustomEditor(typeof(ItemProfileManager))]
-public class ItemProfileManagerEditor : Editor
-{
-    public override void OnInspectorGUI()
-    {
-        DrawDefaultInspector();
-        ItemProfileManager manager = (ItemProfileManager)target;
-        if (GUILayout.Button("Refresh Items"))
-        {
-            manager.FetchItemProfiles();
-        }
-    }
-}
-#endif 
+} 

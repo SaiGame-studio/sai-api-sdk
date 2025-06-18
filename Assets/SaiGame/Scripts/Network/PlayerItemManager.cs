@@ -1,9 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
 
 public class PlayerItemManager : MonoBehaviour
 {
@@ -60,20 +57,4 @@ public class PlayerItemListResponse
     public string message;
     public string message_code;
     public List<InventoryItem> data;
-}
-
-#if UNITY_EDITOR
-[CustomEditor(typeof(PlayerItemManager))]
-public class PlayerItemManagerEditor : Editor
-{
-    public override void OnInspectorGUI()
-    {
-        DrawDefaultInspector();
-        PlayerItemManager manager = (PlayerItemManager)target;
-        if (GUILayout.Button("Refresh Items"))
-        {
-            manager.FetchPlayerItems();
-        }
-    }
-}
-#endif 
+} 

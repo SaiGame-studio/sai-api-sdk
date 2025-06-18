@@ -194,13 +194,13 @@ MonoBehaviour:
   storageType: 0
   rememberedEmail: user_c84dfed9_a7e9_49e9_b558_01c8ad5e9022@example.com
   rememberEmailEnabled: 1
-  currentTokenDisplay: 95|VMD0sKP...WBa22f2026
+  currentTokenDisplay: 227|LTYrcL...o7472ddb77
   hasValidTokenDisplay: 1
   tokenStorageTypeDisplay: EncryptedPlayerPrefs
-  tokenLengthDisplay: 51
+  tokenLengthDisplay: 52
   isTokenExpired: 0
   timeUntilExpire: N/A
-  currentToken: 95|VMD0sKPFCBEzu45yl4BoJrMunFb0BYtXIa3Y7SWBa22f2026
+  currentToken: 227|LTYrcLnBoCLEJXX3fGcR6lLKLRIha5gFFXUgCvo7472ddb77
   tokenExpiresAt: 0
   tokenExpiresIn: 0
-  gameId: 6851748a31d31c1589071055
+  gameId: 68482e25731d20624900f952

@@ -35,9 +35,9 @@ public class MainMenuUISetup : SaiBehaviour
         }
     }
     
-    void Reset()
+    protected override void Reset()
     {
-        // Gọi hàm tạo UI khi nhấn nút Reset trong Inspector
+        base.Reset();
         CreateLoginUI();
     }
     

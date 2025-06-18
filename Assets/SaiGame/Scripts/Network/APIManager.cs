@@ -36,7 +36,7 @@ public class APIManager : SaiSingleton<APIManager>
     [SerializeField] protected int tokenExpiresIn = 0;   // Seconds
 
     [Header("Game Info")]
-    [SerializeField] protected string gameId = "6851748a31d31c1589071055"; // UUID, chỉnh trong Inspector
+    [SerializeField] protected string gameId = "68482e25731d20624900f952"; // UUID, chỉnh trong Inspector
     public string GameId => gameId;
 
     protected override void Awake()

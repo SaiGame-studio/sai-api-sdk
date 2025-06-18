@@ -237,7 +237,7 @@ public class ShopUISetup : SaiBehaviour
         {
             grid = itemListContent.gameObject.AddComponent<UnityEngine.UI.GridLayoutGroup>();
         }
-        grid.cellSize = new Vector2(160, 160);
+        grid.cellSize = new Vector2(160, 180); // tăng chiều cao để đủ chỗ cho tên phía trên
         grid.spacing = new Vector2(5, 5);
         grid.constraint = UnityEngine.UI.GridLayoutGroup.Constraint.FixedColumnCount;
         grid.constraintCount = 3;
@@ -246,12 +246,36 @@ public class ShopUISetup : SaiBehaviour
 
         foreach (var item in itemProfiles)
         {
-            GameObject itemBtn = CreateButton($"Item_{item.item_profile_id}", item.item_profile.name, itemListContent);
-            RectTransform rect = itemBtn.GetComponent<RectTransform>();
-            rect.sizeDelta = new Vector2(160, 160);
-            // Tooltip hoặc text phụ
-            string info = $"Type: {item.item_profile.type}\nPrice: {item.price_current} (Old: {item.price_old})\nID: {item.item_profile_id}";
-            var tooltip = CreateText("Info", info, itemBtn.transform, 12);
+            // Tạo một container cho mỗi item (dọc: tên, button, info)
+            GameObject itemContainer = CreateUIElement("ItemContainer", itemListContent);
+            RectTransform containerRect = itemContainer.GetComponent<RectTransform>();
+            containerRect.sizeDelta = new Vector2(160, 180);
+            containerRect.anchorMin = new Vector2(0.5f, 0.5f);
+            containerRect.anchorMax = new Vector2(0.5f, 0.5f);
+            containerRect.pivot = new Vector2(0.5f, 0.5f);
+
+            // Tên item phía trên button
+            GameObject nameText = CreateText("ItemName", item.item_profile.name, itemContainer.transform, 16);
+            RectTransform nameRect = nameText.GetComponent<RectTransform>();
+            nameRect.anchorMin = new Vector2(0, 1);
+            nameRect.anchorMax = new Vector2(1, 1);
+            nameRect.pivot = new Vector2(0.5f, 1);
+            nameRect.anchoredPosition = new Vector2(0, 0);
+            nameRect.sizeDelta = new Vector2(0, 30);
+
+            // Button KHÔNG có id trong tên, chỉ để tên là "Mua" hoặc "Buy"
+            GameObject itemBtn = CreateButton("ItemButton", "Buy", itemContainer.transform);
+            RectTransform btnRect = itemBtn.GetComponent<RectTransform>();
+            btnRect.anchorMin = new Vector2(0, 1);
+            btnRect.anchorMax = new Vector2(1, 1);
+            btnRect.pivot = new Vector2(0.5f, 1);
+            btnRect.anchoredPosition = new Vector2(0, -30);
+            btnRect.sizeDelta = new Vector2(0, 80);
+            // TODO: Gán sự kiện mua hàng nếu cần
+
+            // Tooltip hoặc text phụ phía dưới button
+            string info = $"Type: {item.item_profile.type}\nPrice: {item.price_current} (Old: {item.price_old})";
+            var tooltip = CreateText("Info", info, itemContainer.transform, 12);
             var tooltipRect = tooltip.GetComponent<RectTransform>();
             tooltipRect.anchorMin = new Vector2(0, 0);
             tooltipRect.anchorMax = new Vector2(1, 0);

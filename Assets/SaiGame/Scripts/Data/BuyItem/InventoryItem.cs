@@ -1,21 +1,4 @@
 using System;
-using System.Collections.Generic;
-
-[Serializable]
-public class BuyItemResponse
-{
-    public string status;
-    public string message;
-    public string message_code;
-    public BuyItemResponseData data;
-}
-
-[Serializable]
-public class BuyItemResponseData
-{
-    public List<InventoryItem> my_currencies;
-    public List<InventoryItem> my_items;
-}
 
 [Serializable]
 public class InventoryItem
@@ -36,4 +19,4 @@ public class InventoryItem
     public long updated_at;
     public string inventory_item_id;
     public string id;
-}
+} 

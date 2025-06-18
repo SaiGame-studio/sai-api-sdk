@@ -183,5 +183,6 @@ public class ShopManager : MonoBehaviour
     public void SelectShopById(string shopId)
     {
         selectedShopIdForEditor = shopId;
+        FetchShopItems(shopId);
     }
 } 

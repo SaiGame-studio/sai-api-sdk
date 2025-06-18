@@ -4,48 +4,142 @@ using UnityEngine.SceneManagement;
 using UnityEngine.EventSystems;
 using TMPro;
 using System.Collections.Generic;
+using System.Collections;
 
-public class ShopUISetup : SaiBehaviour
+public class ShopUISetup : MonoBehaviour
 {
     [Header("Auto Setup UI")]
     public bool autoSetup = true;
 
-    [Header("UI References")]
-    public Button logoutButton;
-    public Button backToMainMenuButton;
-    public Button refreshButton;
-    public ScrollRect shopListScrollView;
-    public RectTransform shopListContent;
-    public ScrollRect itemListScrollView;
-    public RectTransform itemListContent;
+    [Header("APIManager Integration")]
+    public APIManager apiManager;
+    public ShopManager shopManager;
 
-    [Header("Scene Names")]
-    public string mainMenuSceneName = SceneNames.MAIN_MENU;
+    [Header("UI References (Auto-assigned)")]
+    [SerializeField] public Transform shopItemContainer;
+    [SerializeField] public GameObject shopItemPrefab;
+    [SerializeField] public Button refreshButton;
+    [SerializeField] public Button backToMainMenuButton;
+    [SerializeField] public TextMeshProUGUI statusText;
+    [SerializeField] public GameObject loadingPanel;
+    [SerializeField] public TextMeshProUGUI balanceText;
+    [SerializeField] public ScrollRect shopScrollRect;
+    [SerializeField] public Transform shopSelectionContainer;
+    [SerializeField] public GameObject shopSelectionPrefab;
+    [SerializeField] public GameObject shopSelectionPanel;
+    [SerializeField] public GameObject shopItemsPanel;
 
-    private ShopManager shopManager;
+    [Header("Scene Management")]
+    public string mainMenuSceneName = "2_MainMenu";
 
-    protected override void Start()
+    // Private variables for tracking UI elements
+    private List<GameObject> shopItems = new List<GameObject>();
+    private List<GameObject> shopSelectionItems = new List<GameObject>();
+    private ShopData selectedShop = null;
+
+    void Start()
     {
-        base.Start();
-        shopManager = FindFirstObjectByType<ShopManager>();
-        if (shopManager != null)
-        {
-            shopManager.OnShopListChanged += OnShopListChanged;
-            shopManager.OnShopItemsChanged += OnShopItemsChanged;
-        }
+        // Tự động tìm và liên kết APIManager và ShopManager một lần duy nhất
+        AutoLinkManagers();
+
         if (autoSetup)
         {
             CreateShopUI();
         }
+
+        SetupUI();
+        
+        // Delay một frame để đảm bảo tất cả components đã được khởi tạo
+        StartCoroutine(DelayedLoadShopData());
+    }
+
+    private void AutoLinkManagers()
+    {
+        Debug.Log("[ShopUISetup] AutoLinkManagers called");
+        
+        // Tự động tìm và liên kết APIManager
+        if (apiManager == null)
+        {
+            apiManager = FindFirstObjectByType<APIManager>();
+            if (apiManager != null)
+            {
+                Debug.Log("[ShopUISetup] ✓ APIManager found and linked automatically");
+            }
+            else
+            {
+                Debug.LogWarning("[ShopUISetup] ✗ APIManager not found in scene");
+            }
+        }
         else
         {
-            SetupUI();
+            Debug.Log("[ShopUISetup] ✓ APIManager already linked");
+        }
+
+        // Tự động tìm và liên kết ShopManager
+        if (shopManager == null)
+        {
+            shopManager = FindFirstObjectByType<ShopManager>();
+            if (shopManager != null)
+            {
+                Debug.Log("[ShopUISetup] ✓ ShopManager found and linked automatically");
+            }
+            else
+            {
+                Debug.LogWarning("[ShopUISetup] ✗ ShopManager not found in scene");
+            }
+        }
+        else
+        {
+            Debug.Log("[ShopUISetup] ✓ ShopManager already linked");
+        }
+
+        // Log final status
+        Debug.Log($"[ShopUISetup] Final Manager Status - APIManager: {(apiManager != null ? "✓ Linked" : "✗ Not Found")}, ShopManager: {(shopManager != null ? "✓ Linked" : "✗ Not Found")}");
+    }
+
+    private IEnumerator DelayedLoadShopData()
+    {
+        // Đợi một frame
+        yield return null;
+        
+        // Kiểm tra lại APIManager và ShopManager
+        AutoLinkManagers();
+        
+        // Đợi thêm một frame nữa để đảm bảo managers đã sẵn sàng
+        yield return null;
+        
+        // Kiểm tra xem có token hợp lệ không
+        if (apiManager != null && apiManager.HasValidToken())
+        {
+            Debug.Log("[ShopUISetup] APIManager found and has valid token, loading shop data...");
+            LoadShopData();
+        }
+        else
+        {
+            Debug.LogWarning("[ShopUISetup] APIManager not found or no valid token. Waiting for authentication...");
+            ShowStatus("Waiting for authentication...");
+            
+            // Nếu chưa có token, đợi authentication
+            if (apiManager != null)
+            {
+                apiManager.OnAuthenticationSuccess += OnAuthenticationSuccess;
+            }
         }
     }
 
-    protected override void Reset()
+    private void OnAuthenticationSuccess()
     {
-        base.Reset();
+        Debug.Log("[ShopUISetup] Authentication successful, loading shop data...");
+        if (apiManager != null)
+        {
+            apiManager.OnAuthenticationSuccess -= OnAuthenticationSuccess;
+        }
+        LoadShopData();
+    }
+
+    void Reset()
+    {
+        // Gọi hàm tạo UI khi nhấn nút Reset trong Inspector
         CreateShopUI();
     }
 
@@ -53,6 +147,59 @@ public class ShopUISetup : SaiBehaviour
     public void CreateShopUIFromMenu()
     {
         CreateShopUI();
+    }
+
+    [ContextMenu("Delete Shop UI")]
+    public void DeleteShopUI()
+    {
+        // Tìm và xóa Canvas
+        Canvas existingCanvas = FindFirstObjectByType<Canvas>();
+        if (existingCanvas != null)
+        {
+            DestroyImmediate(existingCanvas.gameObject);
+            Debug.Log("Shop UI Canvas deleted.");
+        }
+
+        // Tìm và xóa EventSystem nếu không có UI nào khác sử dụng
+        EventSystem existingEventSystem = FindFirstObjectByType<EventSystem>();
+        if (existingEventSystem != null)
+        {
+            // Kiểm tra xem có Canvas nào khác không
+            Canvas[] allCanvases = FindObjectsByType<Canvas>(FindObjectsSortMode.None);
+            if (allCanvases.Length == 0)
+            {
+                DestroyImmediate(existingEventSystem.gameObject);
+                Debug.Log("EventSystem deleted.");
+            }
+        }
+
+        // Xóa ShopSelectionPrefab nếu tồn tại
+        if (shopSelectionPrefab != null)
+        {
+            DestroyImmediate(shopSelectionPrefab);
+            Debug.Log("ShopSelectionPrefab deleted.");
+        }
+
+        // Xóa ShopItemPrefab nếu tồn tại
+        if (shopItemPrefab != null)
+        {
+            DestroyImmediate(shopItemPrefab);
+            Debug.Log("ShopItemPrefab deleted.");
+        }
+
+        // Reset references
+        shopItemContainer = null;
+        shopItemPrefab = null;
+        refreshButton = null;
+        backToMainMenuButton = null;
+        statusText = null;
+        loadingPanel = null;
+        balanceText = null;
+        shopScrollRect = null;
+        shopSelectionContainer = null;
+        shopSelectionPrefab = null;
+        shopSelectionPanel = null;
+        shopItemsPanel = null;
     }
 
     public void CreateShopUI()
@@ -80,7 +227,7 @@ public class ShopUISetup : SaiBehaviour
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);
 
-        canvasGO.AddComponent<GraphicRaycaster>();
+        GraphicRaycaster raycaster = canvasGO.AddComponent<GraphicRaycaster>();
 
         // Create Background Panel
         GameObject bgPanel = CreateUIElement("Background", canvasGO.transform);
@@ -88,306 +235,711 @@ public class ShopUISetup : SaiBehaviour
         bgImage.color = new Color(0.1f, 0.1f, 0.2f, 0.8f);
         SetFullScreen(bgPanel.GetComponent<RectTransform>());
 
-        // Top Left Panel for Logout, Back & Refresh
-        GameObject topLeftPanel = CreateUIElement("TopLeftPanel", canvasGO.transform);
-        RectTransform topLeftRect = topLeftPanel.GetComponent<RectTransform>();
-        topLeftRect.anchorMin = new Vector2(0, 1);
-        topLeftRect.anchorMax = new Vector2(0, 1);
-        topLeftRect.pivot = new Vector2(0, 1);
-        topLeftRect.anchoredPosition = new Vector2(20, 0);
-        topLeftRect.sizeDelta = new Vector2(500, 60);
+        // Create Main Panel (removed Image component)
+        GameObject mainPanel = CreateUIElement("ShopPanel", canvasGO.transform);
+        // Removed Image component from ShopPanel
+        RectTransform mainRect = mainPanel.GetComponent<RectTransform>();
+        mainRect.sizeDelta = new Vector2(1600, 900);
 
-        // Back to MainMenu Button
-        GameObject backBtn = CreateButton("BackToMainMenuButton", "MAIN MENU", topLeftPanel.transform);
-        RectTransform backRect = backBtn.GetComponent<RectTransform>();
-        backRect.anchoredPosition = new Vector2(90, -30);
-        backRect.sizeDelta = new Vector2(120, 50);
-        backToMainMenuButton = backBtn.GetComponent<Button>();
+        // Create Balance Text (move higher)
+        GameObject balanceGO = CreateText("BalanceText", "Balance: $0", mainPanel.transform, 32);
+        RectTransform balanceRect = balanceGO.GetComponent<RectTransform>();
+        balanceRect.anchoredPosition = new Vector2(0, 420); // Move closer to top
+        balanceRect.sizeDelta = new Vector2(400, 80);
+        balanceText = balanceGO.GetComponent<TextMeshProUGUI>();
 
-        // Refresh Button
-        GameObject refreshBtn = CreateButton("RefreshButton", "REFRESH", topLeftPanel.transform);
+        // Create Top Buttons Panel (move higher)
+        GameObject topButtonsPanel = CreateUIElement("TopButtonsPanel", mainPanel.transform);
+        RectTransform topButtonsRect = topButtonsPanel.GetComponent<RectTransform>();
+        topButtonsRect.anchoredPosition = new Vector2(0, 340); // Move closer to top
+        topButtonsRect.sizeDelta = new Vector2(800, 80);
+
+        // Create Refresh Button
+        GameObject refreshBtn = CreateButton("RefreshButton", "REFRESH", topButtonsPanel.transform);
         RectTransform refreshRect = refreshBtn.GetComponent<RectTransform>();
-        refreshRect.anchoredPosition = new Vector2(230, -30);
-        refreshRect.sizeDelta = new Vector2(120, 50);
+        refreshRect.anchoredPosition = new Vector2(-200, 0);
+        refreshRect.sizeDelta = new Vector2(200, 60);
         refreshButton = refreshBtn.GetComponent<Button>();
 
-        // Logout Button
-        GameObject logoutBtn = CreateButton("LogoutButton", "LOGOUT", topLeftPanel.transform);
-        RectTransform logoutRect = logoutBtn.GetComponent<RectTransform>();
-        logoutRect.anchoredPosition = new Vector2(370, -30);
-        logoutRect.sizeDelta = new Vector2(100, 50);
-        logoutButton = logoutBtn.GetComponent<Button>();
-        Button logoutBtnComp = logoutBtn.GetComponent<Button>();
-        ColorBlock logoutColors = logoutBtnComp.colors;
-        logoutColors.normalColor = new Color(0.8f, 0.2f, 0.2f, 1f);
-        logoutBtnComp.colors = logoutColors;
+        // Set font size cho refresh button text
+        TextMeshProUGUI refreshText = refreshBtn.GetComponentInChildren<TextMeshProUGUI>();
+        if (refreshText != null)
+            refreshText.fontSize = 28;
 
-        // Main Content Panel
-        GameObject mainPanel = CreateUIElement("ShopMainPanel", canvasGO.transform);
-        Image mainImage = mainPanel.AddComponent<Image>();
-        mainImage.color = new Color(0.2f, 0.2f, 0.3f, 0.9f);
-        RectTransform mainRect = mainPanel.GetComponent<RectTransform>();
-        mainRect.anchorMin = new Vector2(0.5f, 0.5f);
-        mainRect.anchorMax = new Vector2(0.5f, 0.5f);
-        mainRect.pivot = new Vector2(0.5f, 0.5f);
-        mainRect.anchoredPosition = Vector2.zero;
-        mainRect.sizeDelta = new Vector2(1200, 900);
+        // Create Back Button
+        GameObject backBtn = CreateButton("BackButton", "BACK", topButtonsPanel.transform);
+        RectTransform backRect = backBtn.GetComponent<RectTransform>();
+        backRect.anchoredPosition = new Vector2(200, 0);
+        backRect.sizeDelta = new Vector2(200, 60);
+        backToMainMenuButton = backBtn.GetComponent<Button>();
 
-        // Shop List (ScrollView)
-        GameObject shopScrollGO = CreateScrollView("ShopListScrollView", mainPanel.transform, out RectTransform shopContentRect, true);
-        RectTransform shopScrollRect = shopScrollGO.GetComponent<RectTransform>();
-        shopScrollRect.anchorMin = new Vector2(0.5f, 1f);
-        shopScrollRect.anchorMax = new Vector2(0.5f, 1f);
-        shopScrollRect.pivot = new Vector2(0.5f, 1f);
-        shopScrollRect.anchoredPosition = new Vector2(0, -60);
-        shopScrollRect.sizeDelta = new Vector2(1000, 160);
-        shopListScrollView = shopScrollGO.GetComponent<ScrollRect>();
-        shopListContent = shopContentRect;
+        // Set color cho back button
+        Button backBtnComp = backBtn.GetComponent<Button>();
+        ColorBlock backColors = backBtnComp.colors;
+        backColors.normalColor = new Color(0.8f, 0.4f, 0.4f, 1f);
+        backBtnComp.colors = backColors;
 
-        // Item List (ScrollView)
-        GameObject itemScrollGO = CreateScrollView("ItemListScrollView", mainPanel.transform, out RectTransform itemContentRect);
-        RectTransform itemScrollRect = itemScrollGO.GetComponent<RectTransform>();
-        itemScrollRect.anchorMin = new Vector2(0.5f, 0f);
-        itemScrollRect.anchorMax = new Vector2(0.5f, 0f);
-        itemScrollRect.pivot = new Vector2(0.5f, 0f);
-        itemScrollRect.anchoredPosition = new Vector2(0, 60);
-        itemScrollRect.sizeDelta = new Vector2(1000, 500);
-        itemListScrollView = itemScrollGO.GetComponent<ScrollRect>();
-        itemListContent = itemContentRect;
+        // Set font size cho back button text
+        TextMeshProUGUI backText = backBtn.GetComponentInChildren<TextMeshProUGUI>();
+        if (backText != null)
+            backText.fontSize = 28;
 
-        // Setup ShopUISetup
-        ShopUISetup shopUISetup = canvasGO.AddComponent<ShopUISetup>();
-        shopUISetup.autoSetup = false;
-        shopUISetup.logoutButton = logoutButton;
-        shopUISetup.backToMainMenuButton = backToMainMenuButton;
-        shopUISetup.refreshButton = refreshButton;
-        shopUISetup.shopListScrollView = shopListScrollView;
-        shopUISetup.shopListContent = shopListContent;
-        shopUISetup.itemListScrollView = itemListScrollView;
-        shopUISetup.itemListContent = itemListContent;
+        // Create Back to Shop Selection Button (initially hidden)
+        GameObject backToShopSelectionBtn = CreateButton("BackToShopSelectionButton", "BACK TO SHOPS", topButtonsPanel.transform);
+        RectTransform backToShopSelectionRect = backToShopSelectionBtn.GetComponent<RectTransform>();
+        backToShopSelectionRect.anchoredPosition = new Vector2(0, 0);
+        backToShopSelectionRect.sizeDelta = new Vector2(200, 60);
+        backToShopSelectionBtn.SetActive(false); // Initially hidden
+
+        // Set color cho back to shop selection button
+        Button backToShopSelectionBtnComp = backToShopSelectionBtn.GetComponent<Button>();
+        ColorBlock backToShopSelectionColors = backToShopSelectionBtnComp.colors;
+        backToShopSelectionColors.normalColor = new Color(0.6f, 0.4f, 0.8f, 1f);
+        backToShopSelectionBtnComp.colors = backToShopSelectionColors;
+
+        // Set font size cho back to shop selection button text
+        TextMeshProUGUI backToShopSelectionText = backToShopSelectionBtn.GetComponentInChildren<TextMeshProUGUI>();
+        if (backToShopSelectionText != null)
+            backToShopSelectionText.fontSize = 24;
+
+        // Create Shop Selection Panel (move higher and more to the left, but always inside UI)
+        GameObject shopSelectionPanelGO = CreateUIElement("ShopSelectionPanel", mainPanel.transform);
+        RectTransform shopSelectionRect = shopSelectionPanelGO.GetComponent<RectTransform>();
+        shopSelectionRect.anchoredPosition = new Vector2(-500, 0); // 20px from left edge of mainPanel
+        shopSelectionRect.sizeDelta = new Vector2(320, 600); // Slightly narrower
+        shopSelectionPanel = shopSelectionPanelGO;
+        shopSelectionPanel.SetActive(true); // Always visible
+
+        // Add Title to Shop Grid (left-aligned)
+        GameObject shopGridTitleGO = CreateText("ShopGridTitle", "Shops", shopSelectionPanelGO.transform, 28);
+        RectTransform shopGridTitleRect = shopGridTitleGO.GetComponent<RectTransform>();
+        shopGridTitleRect.pivot = new Vector2(0, 1);
+        shopGridTitleRect.anchorMin = new Vector2(0, 1);
+        shopGridTitleRect.anchorMax = new Vector2(0, 1);
+        shopGridTitleRect.anchoredPosition = new Vector2(0, 0); // Top left inside panel
+        shopGridTitleRect.sizeDelta = new Vector2(200, 40);
+        TextMeshProUGUI shopGridTitleText = shopGridTitleGO.GetComponent<TextMeshProUGUI>();
+        shopGridTitleText.alignment = TMPro.TextAlignmentOptions.TopLeft;
+        shopGridTitleGO.SetActive(true); // Always visible
+
+        // Create Shop Selection Container with Grid Layout
+        GameObject shopSelectionContainerGO = CreateUIElement("ShopSelectionContainer", shopSelectionPanelGO.transform);
+        RectTransform shopSelectionContainerRect = shopSelectionContainerGO.GetComponent<RectTransform>();
+        shopSelectionContainerRect.anchoredPosition = new Vector2(0, 50);
+        shopSelectionContainerRect.sizeDelta = new Vector2(400, 400);
+        shopSelectionContainer = shopSelectionContainerGO.transform;
+
+        // Add ScrollRect to shop selection container
+        ScrollRect shopSelectionScrollRect = shopSelectionContainerGO.AddComponent<ScrollRect>();
+
+        // Create Content for Shop Selection ScrollRect
+        GameObject shopSelectionContentGO = CreateUIElement("ShopSelectionContent", shopSelectionContainerGO.transform);
+        RectTransform shopSelectionContentRect = shopSelectionContentGO.GetComponent<RectTransform>();
+        shopSelectionContentRect.sizeDelta = new Vector2(400, 400);
+        shopSelectionContentRect.anchorMin = new Vector2(0, 0);
+        shopSelectionContentRect.anchorMax = new Vector2(0, 1);
+        shopSelectionContentRect.pivot = new Vector2(0, 1);
+
+        // Setup Shop Selection ScrollRect
+        shopSelectionScrollRect.content = shopSelectionContentRect;
+        shopSelectionScrollRect.horizontal = false;
+        shopSelectionScrollRect.vertical = true;
+        shopSelectionScrollRect.scrollSensitivity = 10f;
+
+        // Add Grid Layout Group to shop selection content
+        GridLayoutGroup shopSelectionGridGroup = shopSelectionContentGO.AddComponent<GridLayoutGroup>();
+        shopSelectionGridGroup.cellSize = new Vector2(200, 100);
+        shopSelectionGridGroup.spacing = new Vector2(10, 10);
+        shopSelectionGridGroup.padding = new RectOffset(10, 10, 10, 10);
+        shopSelectionGridGroup.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+        shopSelectionGridGroup.constraintCount = 1; // 1 column for 200x100 buttons
+
+        // Add Content Size Fitter to shop selection content
+        ContentSizeFitter shopSelectionSizeFitter = shopSelectionContentGO.AddComponent<ContentSizeFitter>();
+        shopSelectionSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        // Update shopSelectionContainer to point to content
+        shopSelectionContainer = shopSelectionContentGO.transform;
+
+        // Create Shop Items Panel (move higher and more to the right)
+        GameObject shopItemsPanelGO = CreateUIElement("ShopItemsPanel", mainPanel.transform);
+        RectTransform shopItemsPanelRect = shopItemsPanelGO.GetComponent<RectTransform>();
+        shopItemsPanelRect.anchoredPosition = new Vector2(0, 60); // Move up and right, clear gap from ShopSelectionPanel
+        shopItemsPanelRect.sizeDelta = new Vector2(1100, 600); // Slightly wider
+        shopItemsPanel = shopItemsPanelGO;
+
+        // Create Shop Items Container with Grid Layout
+        GameObject containerGO = CreateUIElement("ShopItemsContainer", shopItemsPanelGO.transform);
+        RectTransform containerRect = containerGO.GetComponent<RectTransform>();
+        containerRect.anchoredPosition = new Vector2(0, 0);
+        containerRect.sizeDelta = new Vector2(1000, 400);
+        shopItemContainer = containerGO.transform;
+
+        // Add ScrollRect to container
+        ScrollRect scrollRect = containerGO.AddComponent<ScrollRect>();
+        shopScrollRect = scrollRect;
+
+        // Create Content for ScrollRect
+        GameObject contentGO = CreateUIElement("Content", containerGO.transform);
+        RectTransform contentRect = contentGO.GetComponent<RectTransform>();
+        contentRect.sizeDelta = new Vector2(1000, 400);
+        contentRect.anchorMin = new Vector2(0, 1);
+        contentRect.anchorMax = new Vector2(1, 1);
+        contentRect.pivot = new Vector2(0.5f, 1);
+        // Reset left/right (offsetMin.x, offsetMax.x) về 0
+        contentRect.offsetMin = new Vector2(0, contentRect.offsetMin.y);
+        contentRect.offsetMax = new Vector2(0, contentRect.offsetMax.y);
+
+        // Setup ScrollRect
+        scrollRect.content = contentRect;
+        scrollRect.horizontal = false;
+        scrollRect.vertical = true;
+        scrollRect.scrollSensitivity = 10f;
+
+        // Add Grid Layout Group to content
+        GridLayoutGroup layoutGroup = contentGO.AddComponent<GridLayoutGroup>();
+        layoutGroup.cellSize = new Vector2(200, 200);
+        layoutGroup.spacing = new Vector2(20, 20);
+        layoutGroup.padding = new RectOffset(20, 20, 20, 20);
+        layoutGroup.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+        layoutGroup.constraintCount = 4; // 4 columns for 200x200 buttons in smaller container
+
+        // Add Content Size Fitter
+        ContentSizeFitter sizeFitter = contentGO.AddComponent<ContentSizeFitter>();
+        sizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        // Update shopItemContainer to point to content
+        shopItemContainer = contentGO.transform;
+
+        // Create Shop Selection Prefab
+        CreateShopSelectionPrefab();
+
+        // Create Shop Item Prefab
+        CreateShopItemPrefab();
+
+        // Create Status Text (move higher)
+        GameObject statusGO = CreateText("StatusText", "", mainPanel.transform, 24);
+        RectTransform statusRect = statusGO.GetComponent<RectTransform>();
+        statusRect.anchoredPosition = new Vector2(0, -250); // Move up
+        statusRect.sizeDelta = new Vector2(800, 60);
+        statusText = statusGO.GetComponent<TextMeshProUGUI>();
+        statusText.color = Color.yellow;
+
+        // Create Loading Panel (move higher)
+        GameObject loadingGO = CreateUIElement("LoadingPanel", mainPanel.transform);
+        RectTransform loadingRect = loadingGO.GetComponent<RectTransform>();
+        loadingRect.sizeDelta = new Vector2(400, 200);
+        loadingRect.anchoredPosition = new Vector2(0, 180); // Move up
+        loadingPanel = loadingGO;
+
+        // Add background to loading panel
+        Image loadingBg = loadingGO.AddComponent<Image>();
+        loadingBg.color = new Color(0, 0, 0, 0.8f);
+
+        // Create loading text
+        GameObject loadingTextGO = CreateText("LoadingText", "Loading...", loadingGO.transform, 32);
+        RectTransform loadingTextRect = loadingTextGO.GetComponent<RectTransform>();
+        loadingTextRect.anchoredPosition = new Vector2(0, 0);
+        loadingTextRect.sizeDelta = new Vector2(300, 80);
+
+        // Hide loading panel initially
+        loadingPanel.SetActive(false);
 
         Debug.Log("Shop UI created successfully!");
     }
 
+    private void CreateShopItemPrefab()
+    {
+        // Create shop item prefab as a 200x200 button
+        GameObject itemPrefab = CreateUIElement("ShopItemPrefab", null);
+        RectTransform itemRect = itemPrefab.GetComponent<RectTransform>();
+        itemRect.sizeDelta = new Vector2(200, 200);
+
+        // Add background image
+        Image itemBg = itemPrefab.AddComponent<Image>();
+        itemBg.color = new Color(0.3f, 0.3f, 0.4f, 0.8f);
+
+        // Add Button component
+        Button itemButton = itemPrefab.AddComponent<Button>();
+        ColorBlock buttonColors = itemButton.colors;
+        buttonColors.normalColor = new Color(0.3f, 0.3f, 0.4f, 0.8f);
+        buttonColors.highlightedColor = new Color(0.4f, 0.4f, 0.5f, 0.9f);
+        buttonColors.pressedColor = new Color(0.2f, 0.2f, 0.3f, 0.8f);
+        itemButton.colors = buttonColors;
+
+        // Add Vertical Layout Group for content
+        VerticalLayoutGroup itemLayout = itemPrefab.AddComponent<VerticalLayoutGroup>();
+        itemLayout.spacing = 8f;
+        itemLayout.padding = new RectOffset(10, 10, 10, 10);
+        itemLayout.childControlWidth = true;
+        itemLayout.childControlHeight = false;
+        itemLayout.childForceExpandWidth = false;
+        itemLayout.childForceExpandHeight = false;
+
+        // Create Item Icon
+        GameObject iconGO = CreateUIElement("ItemIcon", itemPrefab.transform);
+        RectTransform iconRect = iconGO.GetComponent<RectTransform>();
+        iconRect.sizeDelta = new Vector2(80, 80);
+        Image iconImage = iconGO.AddComponent<Image>();
+        iconImage.color = new Color(0.5f, 0.5f, 0.5f, 1f);
+
+        // Create Item Name
+        GameObject nameGO = CreateText("ItemName", "Item Name", itemPrefab.transform, 14);
+        RectTransform nameRect = nameGO.GetComponent<RectTransform>();
+        nameRect.sizeDelta = new Vector2(180, 30);
+        TextMeshProUGUI nameText = nameGO.GetComponent<TextMeshProUGUI>();
+        nameText.alignment = TextAlignmentOptions.Center;
+
+        // Create Price Text
+        GameObject priceGO = CreateText("PriceText", "$0", itemPrefab.transform, 16);
+        RectTransform priceTextRect = priceGO.GetComponent<RectTransform>();
+        priceTextRect.sizeDelta = new Vector2(180, 25);
+        TextMeshProUGUI priceText = priceGO.GetComponent<TextMeshProUGUI>();
+        priceText.color = new Color(1f, 0.8f, 0.2f, 1f);
+        priceText.alignment = TextAlignmentOptions.Center;
+
+        // Create Buy Button
+        GameObject buyBtn = CreateButton("BuyButton", "BUY", itemPrefab.transform);
+        RectTransform buyRect = buyBtn.GetComponent<RectTransform>();
+        buyRect.sizeDelta = new Vector2(100, 30);
+
+        // Set color cho buy button
+        Button buyBtnComp = buyBtn.GetComponent<Button>();
+        ColorBlock buyColors = buyBtnComp.colors;
+        buyColors.normalColor = new Color(0.2f, 0.8f, 0.2f, 1f);
+        buyBtnComp.colors = buyColors;
+
+        // Set font size cho buy button text
+        TextMeshProUGUI buyText = buyBtn.GetComponentInChildren<TextMeshProUGUI>();
+        if (buyText != null)
+            buyText.fontSize = 12;
+
+        // Store as prefab
+        shopItemPrefab = itemPrefab;
+        shopItemPrefab.SetActive(false); // Hide prefab
+    }
+
+    private void CreateShopSelectionPrefab()
+    {
+        // Create shop selection prefab as a 200x100 button
+        GameObject selectionPrefab = CreateUIElement("ShopSelectionPrefab", null);
+        RectTransform selectionRect = selectionPrefab.GetComponent<RectTransform>();
+        selectionRect.sizeDelta = new Vector2(200, 100);
+
+        // Add background image
+        Image selectionBg = selectionPrefab.AddComponent<Image>();
+        selectionBg.color = new Color(0.3f, 0.3f, 0.4f, 0.8f);
+
+        // Add Button component
+        Button selectionButton = selectionPrefab.AddComponent<Button>();
+        ColorBlock buttonColors = selectionButton.colors;
+        buttonColors.normalColor = new Color(0.3f, 0.3f, 0.4f, 0.8f);
+        buttonColors.highlightedColor = new Color(0.4f, 0.4f, 0.5f, 0.9f);
+        buttonColors.pressedColor = new Color(0.2f, 0.2f, 0.3f, 0.8f);
+        selectionButton.colors = buttonColors;
+
+        // Create Shop Name (Top Left)
+        GameObject shopNameGO = CreateText("ShopName", "Shop", selectionPrefab.transform, 20);
+        RectTransform shopNameRect = shopNameGO.GetComponent<RectTransform>();
+        shopNameRect.anchorMin = new Vector2(0, 1);
+        shopNameRect.anchorMax = new Vector2(1, 1);
+        shopNameRect.anchoredPosition = new Vector2(0, -10);
+        shopNameRect.sizeDelta = new Vector2(-10, 25);
+        TextMeshProUGUI shopNameText = shopNameGO.GetComponent<TextMeshProUGUI>();
+        shopNameText.alignment = TextAlignmentOptions.TopLeft;
+
+        // Create Items Count Text (Bottom) with Label
+        GameObject itemsCountGO = CreateText("ItemsCountText", "Items: 0", selectionPrefab.transform, 16);
+        RectTransform itemsCountTextRect = itemsCountGO.GetComponent<RectTransform>();
+        itemsCountTextRect.anchorMin = new Vector2(0, 0);
+        itemsCountTextRect.anchorMax = new Vector2(1, 0);
+        itemsCountTextRect.anchoredPosition = new Vector2(0, 10);
+        itemsCountTextRect.sizeDelta = new Vector2(-10, 20);
+        TextMeshProUGUI itemsCountText = itemsCountGO.GetComponent<TextMeshProUGUI>();
+        itemsCountText.color = new Color(0.6f, 0.8f, 1f, 1f);
+        itemsCountText.alignment = TextAlignmentOptions.Center;
+
+        // Store as prefab
+        shopSelectionPrefab = selectionPrefab;
+        shopSelectionPrefab.SetActive(false); // Hide prefab
+    }
+
     private void SetupUI()
     {
-        if (logoutButton != null)
-            logoutButton.onClick.AddListener(OnLogoutClick);
-        if (backToMainMenuButton != null)
-            backToMainMenuButton.onClick.AddListener(OnBackToMainMenuClick);
         if (refreshButton != null)
             refreshButton.onClick.AddListener(OnRefreshClick);
+
+        if (backToMainMenuButton != null)
+            backToMainMenuButton.onClick.AddListener(OnBackToMainMenuClick);
+
+        // Find and setup back to shop selection button
+        Button backToShopSelectionBtn = GameObject.Find("BackToShopSelectionButton")?.GetComponent<Button>();
+        if (backToShopSelectionBtn != null)
+            backToShopSelectionBtn.onClick.AddListener(OnBackToShopSelectionClick);
     }
 
-    private void OnLogoutClick()
+    private void LoadShopData()
     {
-        APIManager.Instance.LogoutWithAPI();
-    }
-
-    private void OnBackToMainMenuClick()
-    {
-        SceneManager.LoadScene(mainMenuSceneName);
-    }
-
-    private void OnRefreshClick()
-    {
-        var shopManager = FindFirstObjectByType<ShopManager>();
-        if (shopManager != null)
+        Debug.Log("[ShopUISetup] LoadShopData called");
+        
+        if (shopManager == null)
         {
-            shopManager.FetchShopList();
+            Debug.LogError("[ShopUISetup] ShopManager is null!");
+            ShowStatus("ShopManager not found!");
+            return;
+        }
+
+        if (apiManager == null)
+        {
+            Debug.LogError("[ShopUISetup] APIManager is null!");
+            ShowStatus("APIManager not found!");
+            return;
+        }
+
+        if (!apiManager.HasValidToken())
+        {
+            Debug.LogWarning("[ShopUISetup] No valid token available!");
+            ShowStatus("No valid authentication token!");
+            return;
+        }
+
+        Debug.Log("[ShopUISetup] All checks passed, fetching shop list...");
+        ShowLoading(true);
+        ShowStatus("Loading shops...");
+        
+        // Subscribe to shop list changes
+        shopManager.OnShopListChanged += OnShopListLoaded;
+        shopManager.FetchShopList();
+    }
+
+    private void OnShopListLoaded(List<ShopData> shops)
+    {
+        ShowLoading(false);
+        if (shops != null && shops.Count > 0)
+        {
+            PopulateShopSelection(shops);
+            ShowStatus($"Loaded {shops.Count} shops");
         }
         else
         {
-            Debug.LogWarning("ShopManager not found in scene!");
+            ShowStatus("No shops available");
         }
     }
 
-    private void OnShopListChanged(List<ShopData> shopList)
+    private void PopulateShopSelection(List<ShopData> shops)
     {
-        // Xóa các item cũ trong shopListContent
-        foreach (Transform child in shopListContent)
+        // Clear existing shop selection items
+        ClearShopSelectionItems();
+
+        if (shopSelectionContainer == null || shopSelectionPrefab == null) return;
+
+        foreach (var shop in shops)
         {
-            Destroy(child.gameObject);
-        }
-        // Tạo UI mới cho từng shop
-        foreach (var shop in shopList)
-        {
-            GameObject shopBtn = CreateButton($"Shop_{shop.id}", shop.name, shopListContent);
-            RectTransform btnRect = shopBtn.GetComponent<RectTransform>();
-            btnRect.sizeDelta = new Vector2(160, 160);
-            // Gán sự kiện click để chọn shop trong ShopManager
-            shopBtn.GetComponent<Button>().onClick.AddListener(() => {
-                if (shopManager != null)
-                {
-                    shopManager.SelectShopById(shop.id);
-                }
-            });
+            GameObject shopGO = Instantiate(shopSelectionPrefab, shopSelectionContainer);
+            shopGO.SetActive(true);
+
+            // Set shop data
+            TextMeshProUGUI shopNameText = shopGO.transform.Find("ShopName")?.GetComponent<TextMeshProUGUI>();
+            if (shopNameText != null)
+                shopNameText.text = shop.name ?? "Shop";
+
+            TextMeshProUGUI itemsCountText = shopGO.transform.Find("ItemsCountText")?.GetComponent<TextMeshProUGUI>();
+            if (itemsCountText != null)
+                itemsCountText.text = $"Items: {shop.items_in_shop_count}";
+
+            // Setup button click event
+            Button shopButton = shopGO.GetComponent<Button>();
+            if (shopButton != null)
+            {
+                shopButton.onClick.RemoveAllListeners();
+                shopButton.onClick.AddListener(() => OnShopSelected(shop));
+            }
+
+            shopSelectionItems.Add(shopGO);
         }
     }
 
-    private void OnShopItemsChanged(List<ItemProfileData> itemProfiles)
+    private void ClearShopSelectionItems()
     {
-        // Xóa các item cũ trong itemListContent
-        foreach (Transform child in itemListContent)
+        foreach (var item in shopSelectionItems)
         {
-            Destroy(child.gameObject);
+            if (item != null)
+                DestroyImmediate(item);
         }
-        // Đảm bảo có GridLayoutGroup cho itemListContent
-        var grid = itemListContent.GetComponent<UnityEngine.UI.GridLayoutGroup>();
-        if (grid == null)
+        shopSelectionItems.Clear();
+    }
+
+    private void OnShopSelected(ShopData shop)
+    {
+        selectedShop = shop;
+        ShowLoading(true);
+        ShowStatus($"Loading items from {shop.name}...");
+        
+        // Subscribe to shop items changes
+        shopManager.OnShopItemsChanged += OnShopDataLoaded;
+        shopManager.FetchShopItems(shop.id);
+    }
+
+    private void OnShopDataLoaded(List<ItemProfileData> shopItems)
+    {
+        ShowLoading(false);
+        if (shopItems != null && shopItems.Count > 0)
         {
-            grid = itemListContent.gameObject.AddComponent<UnityEngine.UI.GridLayoutGroup>();
+            // Both panels are always visible, just populate items
+            PopulateShopItems(shopItems);
+            ShowStatus($"Loaded {shopItems.Count} items from {selectedShop?.name}");
         }
-        grid.cellSize = new Vector2(160, 180); // tăng chiều cao để đủ chỗ cho tên phía trên
-        grid.spacing = new Vector2(5, 5);
-        grid.constraint = UnityEngine.UI.GridLayoutGroup.Constraint.FixedColumnCount;
-        grid.constraintCount = 3;
-        grid.padding = new RectOffset(5, 5, 5, 5);
-        grid.childAlignment = TextAnchor.UpperLeft;
-
-        foreach (var item in itemProfiles)
+        else
         {
-            // Tạo một container cho mỗi item (dọc: tên, button, info)
-            GameObject itemContainer = CreateUIElement("ItemContainer", itemListContent);
-            RectTransform containerRect = itemContainer.GetComponent<RectTransform>();
-            containerRect.sizeDelta = new Vector2(160, 180);
-            containerRect.anchorMin = new Vector2(0.5f, 0.5f);
-            containerRect.anchorMax = new Vector2(0.5f, 0.5f);
-            containerRect.pivot = new Vector2(0.5f, 0.5f);
-
-            // Tên item phía trên button
-            GameObject nameText = CreateText("ItemName", item.item_profile.name, itemContainer.transform, 16);
-            RectTransform nameRect = nameText.GetComponent<RectTransform>();
-            nameRect.anchorMin = new Vector2(0, 1);
-            nameRect.anchorMax = new Vector2(1, 1);
-            nameRect.pivot = new Vector2(0.5f, 1);
-            nameRect.anchoredPosition = new Vector2(0, 0);
-            nameRect.sizeDelta = new Vector2(0, 30);
-
-            // Button KHÔNG có id trong tên, chỉ để tên là "Mua" hoặc "Buy"
-            GameObject itemBtn = CreateButton("ItemButton", "Buy", itemContainer.transform);
-            RectTransform btnRect = itemBtn.GetComponent<RectTransform>();
-            btnRect.anchorMin = new Vector2(0, 1);
-            btnRect.anchorMax = new Vector2(1, 1);
-            btnRect.pivot = new Vector2(0.5f, 1);
-            btnRect.anchoredPosition = new Vector2(0, -30);
-            btnRect.sizeDelta = new Vector2(0, 80);
-            // TODO: Gán sự kiện mua hàng nếu cần
-
-            // Tooltip hoặc text phụ phía dưới button
-            string info = $"Type: {item.item_profile.type}\nPrice: {item.price_current} (Old: {item.price_old})";
-            var tooltip = CreateText("Info", info, itemContainer.transform, 12);
-            var tooltipRect = tooltip.GetComponent<RectTransform>();
-            tooltipRect.anchorMin = new Vector2(0, 0);
-            tooltipRect.anchorMax = new Vector2(1, 0);
-            tooltipRect.pivot = new Vector2(0.5f, 0);
-            tooltipRect.anchoredPosition = new Vector2(0, 10);
-            tooltipRect.sizeDelta = new Vector2(0, 60);
+            ShowStatus($"No items available in {selectedShop?.name}");
         }
+    }
+
+    private void PopulateShopItems(List<ItemProfileData> shopItems)
+    {
+        // Clear existing items
+        ClearShopItems();
+
+        if (shopItemContainer == null || shopItemPrefab == null) return;
+
+        foreach (var item in shopItems)
+        {
+            GameObject itemGO = Instantiate(shopItemPrefab, shopItemContainer);
+            itemGO.SetActive(true);
+
+            // Set item data
+            TextMeshProUGUI nameText = itemGO.transform.Find("ItemName")?.GetComponent<TextMeshProUGUI>();
+            if (nameText != null)
+                nameText.text = item.item_profile?.name ?? "Unknown Item";
+
+            TextMeshProUGUI priceText = itemGO.transform.Find("PriceText")?.GetComponent<TextMeshProUGUI>();
+            if (priceText != null)
+                priceText.text = $"${item.price_current}";
+
+            // Setup buy button
+            Button buyButton = itemGO.transform.Find("BuyButton")?.GetComponent<Button>();
+            if (buyButton != null)
+            {
+                buyButton.onClick.RemoveAllListeners();
+                buyButton.onClick.AddListener(() => OnBuyItemClick(item));
+            }
+
+            this.shopItems.Add(itemGO);
+        }
+    }
+
+    private void ClearShopItems()
+    {
+        foreach (var item in shopItems)
+        {
+            if (item != null)
+                DestroyImmediate(item);
+        }
+        shopItems.Clear();
+    }
+
+    private void OnBuyItemClick(ItemProfileData item)
+    {
+        if (shopManager != null)
+        {
+            ShowLoading(true);
+            // Use shop_id and item_profile_id from ItemProfileData
+            shopManager.BuyItem(item.shop_id, item.item_profile_id, 1);
+            ShowStatus("Purchase request sent...");
+        }
+        else
+        {
+            ShowStatus("ShopManager not found!");
+        }
+    }
+
+    private void OnBuyItemSuccess(BuyItemResponse response)
+    {
+        ShowLoading(false);
+        ShowStatus("Item purchased successfully!");
+        
+        // Refresh shop data
+        LoadShopData();
+    }
+
+    private void OnBuyItemError(string error)
+    {
+        ShowLoading(false);
+        ShowStatus($"Purchase failed: {error}");
+    }
+
+    public void OnRefreshClick()
+    {
+        // If we're in shop items view, refresh items
+        if (selectedShop != null && shopItemsPanel != null && shopItemsPanel.activeSelf)
+        {
+            ShowLoading(true);
+            shopManager.FetchShopItems(selectedShop.id);
+        }
+        else
+        {
+            // Otherwise refresh shop list
+            LoadShopData();
+        }
+    }
+
+    public void OnBackToMainMenuClick()
+    {
+        SceneController.LoadScene(mainMenuSceneName);
+    }
+
+    public void OnBackToShopSelectionClick()
+    {
+        // Both panels are always visible now, just clear selection and update status
+        selectedShop = null;
+        ShowStatus("Back to shop selection");
+        
+        // Update button visibility
+        UpdateButtonVisibility();
+    }
+
+    private void UpdateButtonVisibility()
+    {
+        // Find buttons
+        Button backToMainMenuBtn = GameObject.Find("BackButton")?.GetComponent<Button>();
+        Button backToShopSelectionBtn = GameObject.Find("BackToShopSelectionButton")?.GetComponent<Button>();
+
+        if (backToMainMenuBtn != null && backToShopSelectionBtn != null)
+        {
+            bool isInShopItems = selectedShop != null && shopItemsPanel != null && shopItemsPanel.activeSelf;
+            
+            backToMainMenuBtn.gameObject.SetActive(!isInShopItems);
+            backToShopSelectionBtn.gameObject.SetActive(isInShopItems);
+        }
+    }
+
+    private void ShowStatus(string message)
+    {
+        if (statusText != null)
+        {
+            statusText.text = message;
+            Debug.Log($"[ShopUISetup] {message}");
+        }
+    }
+
+    private void ShowLoading(bool show)
+    {
+        if (loadingPanel != null)
+            loadingPanel.SetActive(show);
+    }
+
+    [ContextMenu("Test Refresh")]
+    public void TestRefresh()
+    {
+        OnRefreshClick();
+    }
+
+    [ContextMenu("Clear Status")]
+    public void ClearStatus()
+    {
+        ShowStatus("");
+    }
+
+    [ContextMenu("Show Loading")]
+    public void ShowLoadingTest()
+    {
+        ShowLoading(true);
+    }
+
+    [ContextMenu("Hide Loading")]
+    public void HideLoadingTest()
+    {
+        ShowLoading(false);
     }
 
     GameObject CreateUIElement(string name, Transform parent)
     {
         GameObject go = new GameObject(name);
-        go.transform.SetParent(parent, false);
-        RectTransform rect = go.AddComponent<RectTransform>();
-        rect.anchorMin = new Vector2(0.5f, 0.5f);
-        rect.anchorMax = new Vector2(0.5f, 0.5f);
-        rect.pivot = new Vector2(0.5f, 0.5f);
-        return go;
-    }
-
-    GameObject CreateButton(string name, string text, Transform parent)
-    {
-        GameObject go = CreateUIElement(name, parent);
-        Image image = go.AddComponent<Image>();
-        image.color = new Color(0.2f, 0.5f, 0.8f, 1f);
-        Button button = go.AddComponent<Button>();
-        button.targetGraphic = image;
-        GameObject textGO = CreateText("Text", text, go.transform, 18);
-        TextMeshProUGUI textComp = textGO.GetComponent<TextMeshProUGUI>();
-        textComp.color = Color.white;
-        RectTransform textRect = textGO.GetComponent<RectTransform>();
-        textRect.anchorMin = Vector2.zero;
-        textRect.anchorMax = Vector2.one;
-        textRect.offsetMin = Vector2.zero;
-        textRect.offsetMax = Vector2.zero;
+        go.AddComponent<RectTransform>();
+        if (parent != null)
+            go.transform.SetParent(parent, false);
         return go;
     }
 
     GameObject CreateText(string name, string text, Transform parent, int fontSize)
     {
         GameObject go = CreateUIElement(name, parent);
-        TextMeshProUGUI textComp = go.AddComponent<TextMeshProUGUI>();
-        textComp.text = text;
-        textComp.fontSize = fontSize;
-        textComp.alignment = TextAlignmentOptions.Center;
-        textComp.color = Color.white;
+        TextMeshProUGUI tmpText = go.AddComponent<TextMeshProUGUI>();
+        tmpText.text = text;
+        tmpText.fontSize = fontSize;
+        tmpText.color = Color.white;
+        tmpText.alignment = TextAlignmentOptions.Center;
         return go;
     }
 
-    GameObject CreateScrollView(string name, Transform parent, out RectTransform contentRect, bool horizontal = false)
+    GameObject CreateButton(string name, string text, Transform parent)
     {
-        GameObject scrollGO = CreateUIElement(name, parent);
-        Image bg = scrollGO.AddComponent<Image>();
-        bg.color = new Color(0.15f, 0.15f, 0.25f, 0.8f);
-        ScrollRect scrollRect = scrollGO.AddComponent<ScrollRect>();
-        scrollRect.horizontal = horizontal;
-        scrollRect.vertical = !horizontal;
-        // Viewport
-        GameObject viewport = CreateUIElement("Viewport", scrollGO.transform);
-        Image viewportImg = viewport.AddComponent<Image>();
-        viewportImg.color = new Color(1, 1, 1, 0.05f);
-        Mask mask = viewport.AddComponent<Mask>();
-        mask.showMaskGraphic = false;
-        RectTransform viewportRect = viewport.GetComponent<RectTransform>();
-        viewportRect.anchorMin = Vector2.zero;
-        viewportRect.anchorMax = Vector2.one;
-        viewportRect.offsetMin = Vector2.zero;
-        viewportRect.offsetMax = Vector2.zero;
-        scrollRect.viewport = viewportRect;
-        // Content
-        GameObject content = CreateUIElement("Content", viewport.transform);
-        contentRect = content.GetComponent<RectTransform>();
-        if (horizontal)
-        {
-            contentRect.anchorMin = new Vector2(0, 0);
-            contentRect.anchorMax = new Vector2(0, 1);
-            contentRect.pivot = new Vector2(0, 0.5f);
-            contentRect.anchoredPosition = Vector2.zero;
-            contentRect.sizeDelta = new Vector2(0, 0);
-            var layout = content.AddComponent<HorizontalLayoutGroup>();
-            layout.childForceExpandHeight = false;
-            layout.childForceExpandWidth = false;
-            layout.childAlignment = TextAnchor.MiddleLeft;
-            layout.spacing = 10;
-        }
-        else
-        {
-            contentRect.anchorMin = new Vector2(0, 1);
-            contentRect.anchorMax = new Vector2(1, 1);
-            contentRect.pivot = new Vector2(0.5f, 1);
-            contentRect.anchoredPosition = Vector2.zero;
-            contentRect.sizeDelta = new Vector2(0, 600);
-        }
-        scrollRect.content = contentRect;
-        return scrollGO;
+        GameObject go = CreateUIElement(name, parent);
+        
+        // Add Image component for button background
+        Image image = go.AddComponent<Image>();
+        image.color = new Color(0.3f, 0.3f, 0.5f, 1f);
+        
+        // Add Button component
+        Button button = go.AddComponent<Button>();
+        
+        // Create text child
+        GameObject textGO = CreateText(name + "Text", text, go.transform, 24);
+        RectTransform textRect = textGO.GetComponent<RectTransform>();
+        textRect.anchorMin = Vector2.zero;
+        textRect.anchorMax = Vector2.one;
+        textRect.sizeDelta = Vector2.zero;
+        textRect.anchoredPosition = Vector2.zero;
+        
+        return go;
     }
 
     void SetFullScreen(RectTransform rect)
     {
         rect.anchorMin = Vector2.zero;
         rect.anchorMax = Vector2.one;
-        rect.offsetMin = Vector2.zero;
-        rect.offsetMax = Vector2.zero;
+        rect.sizeDelta = Vector2.zero;
+        rect.anchoredPosition = Vector2.zero;
+    }
+
+    private void ShowShopItemsPanel()
+    {
+        // Both panels are always visible now, just update button visibility
+        UpdateButtonVisibility();
+    }
+
+    private void ShowShopSelectionPanel()
+    {
+        // Both panels are always visible now, just update button visibility
+        UpdateButtonVisibility();
+    }
+
+    [ContextMenu("Retry Load Shop Data")]
+    public void RetryLoadShopData()
+    {
+        Debug.Log("[ShopUISetup] RetryLoadShopData called");
+        StartCoroutine(DelayedLoadShopData());
+    }
+
+    [ContextMenu("Force Load Shop Data")]
+    public void ForceLoadShopData()
+    {
+        Debug.Log("[ShopUISetup] ForceLoadShopData called");
+        LoadShopData();
     }
 
     private void OnDestroy()
     {
+        // Cleanup event subscriptions
         if (shopManager != null)
         {
-            shopManager.OnShopListChanged -= OnShopListChanged;
-            shopManager.OnShopItemsChanged -= OnShopItemsChanged;
+            shopManager.OnShopListChanged -= OnShopListLoaded;
+            shopManager.OnShopItemsChanged -= OnShopDataLoaded;
+        }
+        
+        if (apiManager != null)
+        {
+            apiManager.OnAuthenticationSuccess -= OnAuthenticationSuccess;
         }
     }
 } 

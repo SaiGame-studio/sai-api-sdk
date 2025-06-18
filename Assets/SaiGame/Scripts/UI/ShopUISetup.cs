@@ -43,8 +43,9 @@ public class ShopUISetup : SaiBehaviour
         }
     }
 
-    void Reset()
+    protected override void Reset()
     {
+        base.Reset();
         CreateShopUI();
     }
 

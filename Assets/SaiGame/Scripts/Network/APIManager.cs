@@ -403,6 +403,9 @@ public class APIManager : SaiSingleton<APIManager>
         {
             if (response != null && response.IsValid())
             {
+                // Cập nhật lại expiresAt từ response
+                tokenExpiresAt = response.expires_at;
+                UpdateTokenDisplayInfo();
                 if (showDebugLog) Debug.Log("Token verification successful, triggering OnAuthenticationSuccess event");
                 OnAuthenticationSuccess?.Invoke();
             }

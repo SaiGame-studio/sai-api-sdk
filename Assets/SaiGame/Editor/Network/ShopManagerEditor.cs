@@ -5,15 +5,47 @@ using UnityEditor;
 public class ShopManagerEditor : Editor
 {
     private int selectedShopIndex = -1;
-    private string itemProfileId = "";
     private int number = 1;
     private Vector2 itemProfilesScrollPosition;
     private string lastSelectedShopId = null;
 
     public override void OnInspectorGUI()
     {
-        DrawDefaultInspector();
         ShopManager shopManager = (ShopManager)target;
+
+        // Draw default inspector up to selectedShopIdForEditor
+        DrawDefaultInspector();
+        
+        // Move BuyItem section up right after selectedShopIdForEditor
+        EditorGUILayout.Space(10);
+        EditorGUILayout.LabelField("Buy Item", EditorStyles.boldLabel);
+
+        // BuyItem fields moved up - use itemProfileIdForEditor from ShopManager
+        shopManager.itemProfileIdForEditor = EditorGUILayout.TextField("Item Profile ID", shopManager.itemProfileIdForEditor);
+        number = EditorGUILayout.IntField("Number", number);
+
+        if (GUILayout.Button("Buy Item"))
+        {
+            if (string.IsNullOrEmpty(shopManager.itemProfileIdForEditor))
+            {
+                EditorUtility.DisplayDialog("Error", "Please enter an Item Profile ID", "OK");
+                return;
+            }
+            if (number <= 0)
+            {
+                EditorUtility.DisplayDialog("Error", "Number must be greater than 0", "OK");
+                return;
+            }
+            if (string.IsNullOrEmpty(shopManager.selectedShopIdForEditor))
+            {
+                EditorUtility.DisplayDialog("Error", "Please select a shop first", "OK");
+                return;
+            }
+            shopManager.BuyItem(shopManager.selectedShopIdForEditor, shopManager.itemProfileIdForEditor, number);
+        }
+
+        EditorGUILayout.Space(10);
+        EditorGUILayout.LabelField("Shop Management", EditorStyles.boldLabel);
 
         // Đồng bộ dropdown nếu selectedShopIdForEditor thay đổi
         if (!string.IsNullOrEmpty(shopManager.selectedShopIdForEditor) && shopManager.selectedShopIdForEditor != lastSelectedShopId)
@@ -31,9 +63,6 @@ public class ShopManagerEditor : Editor
         {
             shopManager.FetchShopList();
         }
-
-        EditorGUILayout.Space(10);
-        EditorGUILayout.LabelField("Buy Item", EditorStyles.boldLabel);
 
         // Shop Dropdown
         if (shopManager.ShopList.Count > 0)
@@ -66,7 +95,7 @@ public class ShopManagerEditor : Editor
                     EditorGUILayout.BeginHorizontal();
                     if (GUILayout.Button("Copy ID", GUILayout.Width(70)))
                     {
-                        itemProfileId = item.item_profile.id;
+                        shopManager.itemProfileIdForEditor = item.item_profile.id;
                         GUI.FocusControl(null); // Để cập nhật ngay vào field
                     }
                     EditorGUILayout.LabelField($"Name: {item.item_profile.name}", GUILayout.Width(250));
@@ -78,29 +107,6 @@ public class ShopManagerEditor : Editor
             else
             {
                 EditorGUILayout.HelpBox("No Item", MessageType.Info);
-            }
-
-            itemProfileId = EditorGUILayout.TextField("Item Profile ID", itemProfileId);
-            number = EditorGUILayout.IntField("Number", number);
-
-            if (GUILayout.Button("Buy Item"))
-            {
-                if (string.IsNullOrEmpty(itemProfileId))
-                {
-                    EditorUtility.DisplayDialog("Error", "Please enter an Item Profile ID", "OK");
-                    return;
-                }
-                if (number <= 0)
-                {
-                    EditorUtility.DisplayDialog("Error", "Number must be greater than 0", "OK");
-                    return;
-                }
-                if (selectedShopIndex < 0)
-                {
-                    EditorUtility.DisplayDialog("Error", "Please select a shop", "OK");
-                    return;
-                }
-                shopManager.BuyItem(shopManager.ShopList[selectedShopIndex].id, itemProfileId, number);
             }
         }
         else

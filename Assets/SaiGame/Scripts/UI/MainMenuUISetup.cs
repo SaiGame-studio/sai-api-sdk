@@ -26,7 +26,7 @@ public class MainMenuUISetup : SaiBehaviour
         base.Start();
         if (autoSetup)
         {
-            CreateLoginUI();
+            CreateMainMenuUI();
         }
         else
         {
@@ -38,16 +38,48 @@ public class MainMenuUISetup : SaiBehaviour
     protected override void Reset()
     {
         base.Reset();
-        CreateLoginUI();
+        CreateMainMenuUI();
     }
     
     [ContextMenu("Create Main Menu UI")]
-    public void CreateLoginUIFromMenu()
+    public void CreateMainMenuUIFromMenu()
     {
-        CreateLoginUI();
+        CreateMainMenuUI();
     }
     
-    public void CreateLoginUI()
+    [ContextMenu("Delete Main Menu UI")]
+    public void DeleteMainMenuUI()
+    {
+        // Tìm và xóa Canvas
+        Canvas existingCanvas = FindFirstObjectByType<Canvas>();
+        if (existingCanvas != null)
+        {
+            DestroyImmediate(existingCanvas.gameObject);
+            Debug.Log("Main Menu UI Canvas deleted.");
+        }
+
+        // Tìm và xóa EventSystem nếu không có UI nào khác sử dụng
+        EventSystem existingEventSystem = FindFirstObjectByType<EventSystem>();
+        if (existingEventSystem != null)
+        {
+            // Kiểm tra xem có Canvas nào khác không
+            Canvas[] allCanvases = FindObjectsByType<Canvas>(FindObjectsSortMode.None);
+            if (allCanvases.Length == 0)
+            {
+                DestroyImmediate(existingEventSystem.gameObject);
+                Debug.Log("EventSystem deleted.");
+            }
+        }
+
+        // Reset references
+        shopButton = null;
+        myItemsButton = null;
+        myCharacterButton = null;
+        logoutButton = null;
+        welcomeText = null;
+    }
+    
+    public void CreateMainMenuUI()
     {
         // Check if Canvas already exists
         Canvas existingCanvas = FindFirstObjectByType<Canvas>();
@@ -80,51 +112,71 @@ public class MainMenuUISetup : SaiBehaviour
         bgImage.color = new Color(0.1f, 0.1f, 0.2f, 0.8f);
         SetFullScreen(bgPanel.GetComponent<RectTransform>());
         
-        // Create Main Panel
+        // Create Main Panel - Lớn hơn nữa
         GameObject mainPanel = CreateUIElement("MainMenuPanel", canvasGO.transform);
         Image mainImage = mainPanel.AddComponent<Image>();
         mainImage.color = new Color(0.2f, 0.2f, 0.3f, 0.9f);
         RectTransform mainRect = mainPanel.GetComponent<RectTransform>();
-        mainRect.sizeDelta = new Vector2(600, 800);
+        mainRect.sizeDelta = new Vector2(900, 1100); // Tăng kích thước lớn hơn nữa
         
-        // Create Welcome Text
-        GameObject welcomeTextGO = CreateText("WelcomeText", "Welcome!", mainPanel.transform, 36);
+        // Create Welcome Text - Lớn hơn nữa
+        GameObject welcomeTextGO = CreateText("WelcomeText", "Welcome!", mainPanel.transform, 64); // Tăng font size
         RectTransform welcomeRect = welcomeTextGO.GetComponent<RectTransform>();
-        welcomeRect.anchoredPosition = new Vector2(0, 300);
-        welcomeRect.sizeDelta = new Vector2(500, 100);
+        welcomeRect.anchoredPosition = new Vector2(0, 400); // Điều chỉnh vị trí
+        welcomeRect.sizeDelta = new Vector2(600, 120); // Tăng kích thước
         welcomeText = welcomeTextGO.GetComponent<TextMeshProUGUI>();
         
-        // Create Shop Button
+        // Create Shop Button - Lớn hơn nữa
         GameObject shopBtn = CreateButton("ShopButton", "SHOP", mainPanel.transform);
         RectTransform shopRect = shopBtn.GetComponent<RectTransform>();
-        shopRect.anchoredPosition = new Vector2(0, 150);
-        shopRect.sizeDelta = new Vector2(300, 60);
+        shopRect.anchoredPosition = new Vector2(0, 200); // Điều chỉnh vị trí
+        shopRect.sizeDelta = new Vector2(400, 100); // Tăng kích thước lớn hơn nữa
         shopButton = shopBtn.GetComponent<Button>();
         
-        // Create My Items Button
+        // Set font size cho shop button text
+        TextMeshProUGUI shopText = shopBtn.GetComponentInChildren<TextMeshProUGUI>();
+        if (shopText != null)
+            shopText.fontSize = 36; // Tăng font size
+        
+        // Create My Items Button - Lớn hơn nữa
         GameObject myItemsBtn = CreateButton("MyItemsButton", "MY ITEMS", mainPanel.transform);
         RectTransform myItemsRect = myItemsBtn.GetComponent<RectTransform>();
-        myItemsRect.anchoredPosition = new Vector2(0, 50);
-        myItemsRect.sizeDelta = new Vector2(300, 60);
+        myItemsRect.anchoredPosition = new Vector2(0, 50); // Điều chỉnh vị trí
+        myItemsRect.sizeDelta = new Vector2(400, 100); // Tăng kích thước lớn hơn nữa
         myItemsButton = myItemsBtn.GetComponent<Button>();
         
-        // Create My Character Button
+        // Set font size cho my items button text
+        TextMeshProUGUI myItemsText = myItemsBtn.GetComponentInChildren<TextMeshProUGUI>();
+        if (myItemsText != null)
+            myItemsText.fontSize = 36; // Tăng font size
+        
+        // Create My Character Button - Lớn hơn nữa
         GameObject myCharacterBtn = CreateButton("MyCharacterButton", "MY CHARACTER", mainPanel.transform);
         RectTransform myCharacterRect = myCharacterBtn.GetComponent<RectTransform>();
-        myCharacterRect.anchoredPosition = new Vector2(0, -50);
-        myCharacterRect.sizeDelta = new Vector2(300, 60);
+        myCharacterRect.anchoredPosition = new Vector2(0, -100); // Điều chỉnh vị trí
+        myCharacterRect.sizeDelta = new Vector2(400, 100); // Tăng kích thước lớn hơn nữa
         myCharacterButton = myCharacterBtn.GetComponent<Button>();
         
-        // Create Logout Button
+        // Set font size cho my character button text
+        TextMeshProUGUI myCharacterText = myCharacterBtn.GetComponentInChildren<TextMeshProUGUI>();
+        if (myCharacterText != null)
+            myCharacterText.fontSize = 36; // Tăng font size
+        
+        // Create Logout Button - Lớn hơn nữa
         GameObject logoutBtn = CreateButton("LogoutButton", "LOGOUT", mainPanel.transform);
         RectTransform logoutRect = logoutBtn.GetComponent<RectTransform>();
-        logoutRect.anchoredPosition = new Vector2(0, -200);
-        logoutRect.sizeDelta = new Vector2(200, 50);
+        logoutRect.anchoredPosition = new Vector2(0, -250); // Điều chỉnh vị trí
+        logoutRect.sizeDelta = new Vector2(300, 80); // Tăng kích thước lớn hơn nữa
         logoutButton = logoutBtn.GetComponent<Button>();
         Button logoutBtnComp = logoutBtn.GetComponent<Button>();
         ColorBlock logoutColors = logoutBtnComp.colors;
         logoutColors.normalColor = new Color(0.8f, 0.2f, 0.2f, 1f);
         logoutBtnComp.colors = logoutColors;
+        
+        // Set font size cho logout button text
+        TextMeshProUGUI logoutText = logoutBtn.GetComponentInChildren<TextMeshProUGUI>();
+        if (logoutText != null)
+            logoutText.fontSize = 32; // Tăng font size
         
         // Setup MainMenuUISetup
         MainMenuUISetup mainMenuSetup = canvasGO.AddComponent<MainMenuUISetup>();
@@ -162,33 +214,45 @@ public class MainMenuUISetup : SaiBehaviour
             logoutButton.onClick.AddListener(OnLogoutClick);
     }
     
-    private void UpdateWelcomeText()
+    public void UpdateWelcomeText()
     {
-        //if (welcomeText != null)
-        //{
-        //    string userEmail = AuthenticationSystem.Instance.GetCurrentUserEmail();
-        //    welcomeText.text = $"Welcome, {userEmail}!";
-        //}
+        if (welcomeText != null)
+        {
+            APIManager apiManager = FindFirstObjectByType<APIManager>();
+            if (apiManager != null && apiManager.HasValidToken())
+            {
+                // Có thể lấy thông tin user từ API nếu cần
+                welcomeText.text = "Welcome to the Game!";
+            }
+            else
+            {
+                welcomeText.text = "Welcome Guest!";
+            }
+        }
     }
     
-    private void OnShopClick()
+    public void OnShopClick()
     {
         SceneManager.LoadScene(shopSceneName);
     }
     
-    private void OnMyItemsClick()
+    public void OnMyItemsClick()
     {
         SceneManager.LoadScene(myItemsSceneName);
     }
     
-    private void OnMyCharacterClick()
+    public void OnMyCharacterClick()
     {
         SceneManager.LoadScene(myCharacterSceneName);
     }
     
-    private void OnLogoutClick()
+    public void OnLogoutClick()
     {
-        APIManager.Instance.LogoutWithAPI();
+        APIManager apiManager = FindFirstObjectByType<APIManager>();
+        if (apiManager != null)
+        {
+            apiManager.LogoutWithAPI();
+        }
     }
     
     GameObject CreateUIElement(string name, Transform parent)

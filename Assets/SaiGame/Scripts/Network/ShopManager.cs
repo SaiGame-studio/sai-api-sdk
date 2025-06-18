@@ -28,6 +28,10 @@ public class ShopManager : MonoBehaviour
 
     // Editor-only field
     public string selectedShopIdForEditor = null;
+    
+    [Header("Selected Item Profile (Read Only)")]
+    [SerializeField]
+    public string itemProfileIdForEditor = null;
 
     protected virtual void Start()
     {
@@ -183,5 +187,13 @@ public class ShopManager : MonoBehaviour
     public void SelectShopById(string shopId)
     {
         selectedShopIdForEditor = shopId;
+        FetchShopItems(shopId);
+    }
+    
+    public void UpdateItemProfileId(string shopId, string itemProfileId)
+    {
+        selectedShopIdForEditor = shopId;
+        itemProfileIdForEditor = itemProfileId;
+        if (showDebugLog) Debug.Log($"Selected Item Profile ID: {itemProfileId} from Shop ID: {shopId}");
     }
 } 

@@ -20,6 +20,7 @@ public class ShopUISetup : MonoBehaviour
     [SerializeField] public GameObject shopItemPrefab;
     [SerializeField] public Button refreshButton;
     [SerializeField] public Button backToMainMenuButton;
+    [SerializeField] public Button buyItemButton;
     [SerializeField] public TextMeshProUGUI statusText;
     [SerializeField] public GameObject loadingPanel;
     [SerializeField] public TextMeshProUGUI balanceText;
@@ -55,46 +56,25 @@ public class ShopUISetup : MonoBehaviour
 
     private void AutoLinkManagers()
     {
-        Debug.Log("[ShopUISetup] AutoLinkManagers called");
-        
         // Tự động tìm và liên kết APIManager
         if (apiManager == null)
         {
             apiManager = FindFirstObjectByType<APIManager>();
-            if (apiManager != null)
-            {
-                Debug.Log("[ShopUISetup] ✓ APIManager found and linked automatically");
-            }
-            else
+            if (apiManager == null)
             {
                 Debug.LogWarning("[ShopUISetup] ✗ APIManager not found in scene");
             }
-        }
-        else
-        {
-            Debug.Log("[ShopUISetup] ✓ APIManager already linked");
         }
 
         // Tự động tìm và liên kết ShopManager
         if (shopManager == null)
         {
             shopManager = FindFirstObjectByType<ShopManager>();
-            if (shopManager != null)
-            {
-                Debug.Log("[ShopUISetup] ✓ ShopManager found and linked automatically");
-            }
-            else
+            if (shopManager == null)
             {
                 Debug.LogWarning("[ShopUISetup] ✗ ShopManager not found in scene");
             }
         }
-        else
-        {
-            Debug.Log("[ShopUISetup] ✓ ShopManager already linked");
-        }
-
-        // Log final status
-        Debug.Log($"[ShopUISetup] Final Manager Status - APIManager: {(apiManager != null ? "✓ Linked" : "✗ Not Found")}, ShopManager: {(shopManager != null ? "✓ Linked" : "✗ Not Found")}");
     }
 
     private IEnumerator DelayedLoadShopData()
@@ -111,7 +91,6 @@ public class ShopUISetup : MonoBehaviour
         // Kiểm tra xem có token hợp lệ không
         if (apiManager != null && apiManager.HasValidToken())
         {
-            Debug.Log("[ShopUISetup] APIManager found and has valid token, loading shop data...");
             LoadShopData();
         }
         else
@@ -129,7 +108,6 @@ public class ShopUISetup : MonoBehaviour
 
     private void OnAuthenticationSuccess()
     {
-        Debug.Log("[ShopUISetup] Authentication successful, loading shop data...");
         if (apiManager != null)
         {
             apiManager.OnAuthenticationSuccess -= OnAuthenticationSuccess;
@@ -157,7 +135,6 @@ public class ShopUISetup : MonoBehaviour
         if (existingCanvas != null)
         {
             DestroyImmediate(existingCanvas.gameObject);
-            Debug.Log("Shop UI Canvas deleted.");
         }
 
         // Tìm và xóa EventSystem nếu không có UI nào khác sử dụng
@@ -169,7 +146,6 @@ public class ShopUISetup : MonoBehaviour
             if (allCanvases.Length == 0)
             {
                 DestroyImmediate(existingEventSystem.gameObject);
-                Debug.Log("EventSystem deleted.");
             }
         }
 
@@ -177,14 +153,12 @@ public class ShopUISetup : MonoBehaviour
         if (shopSelectionPrefab != null)
         {
             DestroyImmediate(shopSelectionPrefab);
-            Debug.Log("ShopSelectionPrefab deleted.");
         }
 
         // Xóa ShopItemPrefab nếu tồn tại
         if (shopItemPrefab != null)
         {
             DestroyImmediate(shopItemPrefab);
-            Debug.Log("ShopItemPrefab deleted.");
         }
 
         // Reset references
@@ -192,6 +166,7 @@ public class ShopUISetup : MonoBehaviour
         shopItemPrefab = null;
         refreshButton = null;
         backToMainMenuButton = null;
+        buyItemButton = null;
         statusText = null;
         loadingPanel = null;
         balanceText = null;
@@ -215,7 +190,6 @@ public class ShopUISetup : MonoBehaviour
             GameObject eventSystemGO = new GameObject("EventSystem");
             eventSystemGO.AddComponent<EventSystem>();
             eventSystemGO.AddComponent<StandaloneInputModule>();
-            Debug.Log("EventSystem created.");
         }
 
         // Create Canvas
@@ -265,6 +239,24 @@ public class ShopUISetup : MonoBehaviour
         TextMeshProUGUI refreshText = refreshBtn.GetComponentInChildren<TextMeshProUGUI>();
         if (refreshText != null)
             refreshText.fontSize = 28;
+
+        // Create Buy Item Button
+        GameObject buyItemBtn = CreateButton("BuyItemButton", "BUY ITEM", topButtonsPanel.transform);
+        RectTransform buyItemRect = buyItemBtn.GetComponent<RectTransform>();
+        buyItemRect.anchoredPosition = new Vector2(0, 0);
+        buyItemRect.sizeDelta = new Vector2(200, 60);
+        buyItemButton = buyItemBtn.GetComponent<Button>();
+
+        // Set color cho buy item button
+        Button buyItemBtnComp = buyItemBtn.GetComponent<Button>();
+        ColorBlock buyItemColors = buyItemBtnComp.colors;
+        buyItemColors.normalColor = new Color(0.2f, 0.8f, 0.2f, 1f); // Green color
+        buyItemBtnComp.colors = buyItemColors;
+
+        // Set font size cho buy item button text
+        TextMeshProUGUI buyItemText = buyItemBtn.GetComponentInChildren<TextMeshProUGUI>();
+        if (buyItemText != null)
+            buyItemText.fontSize = 28;
 
         // Create Back Button
         GameObject backBtn = CreateButton("BackButton", "BACK", topButtonsPanel.transform);
@@ -398,7 +390,7 @@ public class ShopUISetup : MonoBehaviour
 
         // Add Grid Layout Group to content
         GridLayoutGroup layoutGroup = contentGO.AddComponent<GridLayoutGroup>();
-        layoutGroup.cellSize = new Vector2(200, 200);
+        layoutGroup.cellSize = new Vector2(200, 100);
         layoutGroup.spacing = new Vector2(20, 20);
         layoutGroup.padding = new RectOffset(20, 20, 20, 20);
         layoutGroup.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
@@ -444,16 +436,14 @@ public class ShopUISetup : MonoBehaviour
 
         // Hide loading panel initially
         loadingPanel.SetActive(false);
-
-        Debug.Log("Shop UI created successfully!");
     }
 
     private void CreateShopItemPrefab()
     {
-        // Create shop item prefab as a 200x200 button
+        // Create shop item prefab as a 200x100 button
         GameObject itemPrefab = CreateUIElement("ShopItemPrefab", null);
         RectTransform itemRect = itemPrefab.GetComponent<RectTransform>();
-        itemRect.sizeDelta = new Vector2(200, 200);
+        itemRect.sizeDelta = new Vector2(200, 100);
 
         // Add background image
         Image itemBg = itemPrefab.AddComponent<Image>();
@@ -469,50 +459,27 @@ public class ShopUISetup : MonoBehaviour
 
         // Add Vertical Layout Group for content
         VerticalLayoutGroup itemLayout = itemPrefab.AddComponent<VerticalLayoutGroup>();
-        itemLayout.spacing = 8f;
+        itemLayout.spacing = 5f;
         itemLayout.padding = new RectOffset(10, 10, 10, 10);
         itemLayout.childControlWidth = true;
         itemLayout.childControlHeight = false;
         itemLayout.childForceExpandWidth = false;
         itemLayout.childForceExpandHeight = false;
 
-        // Create Item Icon
-        GameObject iconGO = CreateUIElement("ItemIcon", itemPrefab.transform);
-        RectTransform iconRect = iconGO.GetComponent<RectTransform>();
-        iconRect.sizeDelta = new Vector2(80, 80);
-        Image iconImage = iconGO.AddComponent<Image>();
-        iconImage.color = new Color(0.5f, 0.5f, 0.5f, 1f);
-
         // Create Item Name
-        GameObject nameGO = CreateText("ItemName", "Item Name", itemPrefab.transform, 14);
+        GameObject nameGO = CreateText("ItemName", "Item Name", itemPrefab.transform, 16);
         RectTransform nameRect = nameGO.GetComponent<RectTransform>();
         nameRect.sizeDelta = new Vector2(180, 30);
         TextMeshProUGUI nameText = nameGO.GetComponent<TextMeshProUGUI>();
         nameText.alignment = TextAlignmentOptions.Center;
 
         // Create Price Text
-        GameObject priceGO = CreateText("PriceText", "$0", itemPrefab.transform, 16);
+        GameObject priceGO = CreateText("PriceText", "$0", itemPrefab.transform, 18);
         RectTransform priceTextRect = priceGO.GetComponent<RectTransform>();
         priceTextRect.sizeDelta = new Vector2(180, 25);
         TextMeshProUGUI priceText = priceGO.GetComponent<TextMeshProUGUI>();
         priceText.color = new Color(1f, 0.8f, 0.2f, 1f);
         priceText.alignment = TextAlignmentOptions.Center;
-
-        // Create Buy Button
-        GameObject buyBtn = CreateButton("BuyButton", "BUY", itemPrefab.transform);
-        RectTransform buyRect = buyBtn.GetComponent<RectTransform>();
-        buyRect.sizeDelta = new Vector2(100, 30);
-
-        // Set color cho buy button
-        Button buyBtnComp = buyBtn.GetComponent<Button>();
-        ColorBlock buyColors = buyBtnComp.colors;
-        buyColors.normalColor = new Color(0.2f, 0.8f, 0.2f, 1f);
-        buyBtnComp.colors = buyColors;
-
-        // Set font size cho buy button text
-        TextMeshProUGUI buyText = buyBtn.GetComponentInChildren<TextMeshProUGUI>();
-        if (buyText != null)
-            buyText.fontSize = 12;
 
         // Store as prefab
         shopItemPrefab = itemPrefab;
@@ -572,16 +539,44 @@ public class ShopUISetup : MonoBehaviour
         if (backToMainMenuButton != null)
             backToMainMenuButton.onClick.AddListener(OnBackToMainMenuClick);
 
+        if (buyItemButton != null)
+            buyItemButton.onClick.AddListener(OnBuyItemClick);
+
         // Find and setup back to shop selection button
         Button backToShopSelectionBtn = GameObject.Find("BackToShopSelectionButton")?.GetComponent<Button>();
         if (backToShopSelectionBtn != null)
             backToShopSelectionBtn.onClick.AddListener(OnBackToShopSelectionClick);
     }
 
+    public void OnBuyItemClick()
+    {
+        if (shopManager == null)
+        {
+            ShowStatus("ShopManager not found!");
+            return;
+        }
+
+        if (string.IsNullOrEmpty(shopManager.itemProfileIdForEditor))
+        {
+            ShowStatus("Please select an item first!");
+            return;
+        }
+
+        if (string.IsNullOrEmpty(shopManager.selectedShopIdForEditor))
+        {
+            ShowStatus("Please select a shop first!");
+            return;
+        }
+
+        // Use default number of 1 for UI button (same as Inspector default)
+        int number = 1;
+        
+        ShowStatus($"Buying item {shopManager.itemProfileIdForEditor} from shop {shopManager.selectedShopIdForEditor}...");
+        shopManager.BuyItem(shopManager.selectedShopIdForEditor, shopManager.itemProfileIdForEditor, number);
+    }
+
     private void LoadShopData()
     {
-        Debug.Log("[ShopUISetup] LoadShopData called");
-        
         if (shopManager == null)
         {
             Debug.LogError("[ShopUISetup] ShopManager is null!");
@@ -603,7 +598,6 @@ public class ShopUISetup : MonoBehaviour
             return;
         }
 
-        Debug.Log("[ShopUISetup] All checks passed, fetching shop list...");
         ShowLoading(true);
         ShowStatus("Loading shops...");
         
@@ -716,12 +710,12 @@ public class ShopUISetup : MonoBehaviour
             if (priceText != null)
                 priceText.text = $"${item.price_current}";
 
-            // Setup buy button
-            Button buyButton = itemGO.transform.Find("BuyButton")?.GetComponent<Button>();
-            if (buyButton != null)
+            // Setup item button click event - update ItemProfileId instead of buying
+            Button itemButton = itemGO.GetComponent<Button>();
+            if (itemButton != null)
             {
-                buyButton.onClick.RemoveAllListeners();
-                buyButton.onClick.AddListener(() => OnBuyItemClick(item));
+                itemButton.onClick.RemoveAllListeners();
+                itemButton.onClick.AddListener(() => OnItemSelected(item));
             }
 
             this.shopItems.Add(itemGO);
@@ -738,34 +732,18 @@ public class ShopUISetup : MonoBehaviour
         shopItems.Clear();
     }
 
-    private void OnBuyItemClick(ItemProfileData item)
+    private void OnItemSelected(ItemProfileData item)
     {
         if (shopManager != null)
         {
-            ShowLoading(true);
-            // Use shop_id and item_profile_id from ItemProfileData
-            shopManager.BuyItem(item.shop_id, item.item_profile_id, 1);
-            ShowStatus("Purchase request sent...");
+            // Update ItemProfileId in ShopManager for inspector use
+            shopManager.UpdateItemProfileId(item.shop_id, item.item_profile_id);
+            ShowStatus($"Selected: {item.item_profile?.name} (ID: {item.item_profile_id})");
         }
         else
         {
             ShowStatus("ShopManager not found!");
         }
-    }
-
-    private void OnBuyItemSuccess(BuyItemResponse response)
-    {
-        ShowLoading(false);
-        ShowStatus("Item purchased successfully!");
-        
-        // Refresh shop data
-        LoadShopData();
-    }
-
-    private void OnBuyItemError(string error)
-    {
-        ShowLoading(false);
-        ShowStatus($"Purchase failed: {error}");
     }
 
     public void OnRefreshClick()
@@ -818,7 +796,6 @@ public class ShopUISetup : MonoBehaviour
         if (statusText != null)
         {
             statusText.text = message;
-            Debug.Log($"[ShopUISetup] {message}");
         }
     }
 
@@ -917,14 +894,12 @@ public class ShopUISetup : MonoBehaviour
     [ContextMenu("Retry Load Shop Data")]
     public void RetryLoadShopData()
     {
-        Debug.Log("[ShopUISetup] RetryLoadShopData called");
         StartCoroutine(DelayedLoadShopData());
     }
 
     [ContextMenu("Force Load Shop Data")]
     public void ForceLoadShopData()
     {
-        Debug.Log("[ShopUISetup] ForceLoadShopData called");
         LoadShopData();
     }
 

@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.SceneManagement;
 using UnityEngine.EventSystems;
 using TMPro;
 using System.Collections.Generic;
@@ -23,7 +22,6 @@ public class ShopUISetup : MonoBehaviour
     [SerializeField] public Button buyItemButton;
     [SerializeField] public TextMeshProUGUI statusText;
     [SerializeField] public GameObject loadingPanel;
-    [SerializeField] public TextMeshProUGUI balanceText;
     [SerializeField] public ScrollRect shopScrollRect;
     [SerializeField] public Transform shopSelectionContainer;
     [SerializeField] public GameObject shopSelectionPrefab;
@@ -169,7 +167,6 @@ public class ShopUISetup : MonoBehaviour
         buyItemButton = null;
         statusText = null;
         loadingPanel = null;
-        balanceText = null;
         shopScrollRect = null;
         shopSelectionContainer = null;
         shopSelectionPrefab = null;
@@ -214,13 +211,6 @@ public class ShopUISetup : MonoBehaviour
         // Removed Image component from ShopPanel
         RectTransform mainRect = mainPanel.GetComponent<RectTransform>();
         mainRect.sizeDelta = new Vector2(1600, 900);
-
-        // Create Balance Text (move higher)
-        GameObject balanceGO = CreateText("BalanceText", "Balance: $0", mainPanel.transform, 32);
-        RectTransform balanceRect = balanceGO.GetComponent<RectTransform>();
-        balanceRect.anchoredPosition = new Vector2(0, 420); // Move closer to top
-        balanceRect.sizeDelta = new Vector2(400, 80);
-        balanceText = balanceGO.GetComponent<TextMeshProUGUI>();
 
         // Create Top Buttons Panel (move higher)
         GameObject topButtonsPanel = CreateUIElement("TopButtonsPanel", mainPanel.transform);

@@ -7,7 +7,6 @@ using System.Linq;
 public class ButtonItemController : MonoBehaviour
 {
     [Header("UI References")]
-    [SerializeField] private TMP_Dropdown itemProfileDropdown;
     [SerializeField] private TextMeshProUGUI itemInfoText;
 
     [Header("Data")]
@@ -18,23 +17,12 @@ public class ButtonItemController : MonoBehaviour
     private void Awake()
     {
         // Tự động tìm các UI components
-        itemProfileDropdown = GetComponentInChildren<TMP_Dropdown>();
         itemInfoText = transform.Find("ItemInfo")?.GetComponent<TextMeshProUGUI>();
-
-        if (itemProfileDropdown == null)
-        {
-            Debug.LogError("[ButtonItemController] TMP_Dropdown not found!");
-        }
 
         if (itemInfoText == null)
         {
             Debug.LogError("[ButtonItemController] ItemInfo TextMeshProUGUI not found!");
         }
-    }
-
-    private void Start()
-    {
-        SetupDropdown();
     }
 
     public void Initialize(List<ItemProfileSimple> itemProfiles, List<InventoryItem> inventoryItems)
@@ -46,20 +34,8 @@ public class ButtonItemController : MonoBehaviour
         UpdateItemInfo();
     }
 
-    private void SetupDropdown()
-    {
-        if (itemProfileDropdown != null)
-        {
-            itemProfileDropdown.onValueChanged.RemoveAllListeners();
-            itemProfileDropdown.onValueChanged.AddListener(OnDropdownValueChanged);
-        }
-    }
-
     private void PopulateDropdown()
     {
-        if (itemProfileDropdown == null) return;
-
-        itemProfileDropdown.ClearOptions();
 
         List<string> options = new List<string>();
         options.Add("Select Item Profile"); // Default option
@@ -73,10 +49,6 @@ public class ButtonItemController : MonoBehaviour
             }
             options.Add(optionText);
         }
-
-        itemProfileDropdown.AddOptions(options);
-        itemProfileDropdown.value = 0; // Set to default
-        itemProfileDropdown.RefreshShownValue();
     }
 
     private void OnDropdownValueChanged(int index)

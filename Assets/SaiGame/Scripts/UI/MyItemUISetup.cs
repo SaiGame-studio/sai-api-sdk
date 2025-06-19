@@ -103,7 +103,6 @@ public class MyItemUISetup : MonoBehaviour
         else
         {
             Debug.LogWarning("[MyItemUISetup] APIManager not found or no valid token. Waiting for authentication...");
-            ShowStatus("Waiting for authentication...");
             
             // Nếu chưa có token, đợi authentication
             if (apiManager != null)
@@ -396,7 +395,6 @@ public class MyItemUISetup : MonoBehaviour
     private void LoadData()
     {
         ShowLoading(true);
-        ShowStatus("Loading data...");
         
         StartCoroutine(LoadDataCoroutine());
     }
@@ -439,7 +437,6 @@ public class MyItemUISetup : MonoBehaviour
 
         PopulateButtonItems();
         ShowLoading(false);
-        ShowStatus($"Loaded {availableItemProfiles.Count} item profiles");
     }
 
     private void PopulateButtonItems()
@@ -549,11 +546,6 @@ public class MyItemUISetup : MonoBehaviour
         OnRefreshClick();
     }
 
-    [ContextMenu("Clear Status")]
-    public void ClearStatus()
-    {
-        ShowStatus("Ready");
-    }
 
     [ContextMenu("Show Loading")]
     public void ShowLoadingTest()

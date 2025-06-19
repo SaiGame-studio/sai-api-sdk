@@ -110,14 +110,6 @@ public class MyItemUISetupEditor : Editor
                 }
                 GUI.backgroundColor = Color.white;
                 
-                // Clear Status button - Màu vàng
-                GUI.backgroundColor = new Color(1f, 0.8f, 0.2f, 1f); // Vàng đẹp
-                if (GUILayout.Button("Clear Status", GUILayout.Height(25)))
-                {
-                    myItemUISetup.ClearStatus();
-                }
-                GUI.backgroundColor = Color.white;
-                
                 // Show Loading button - Màu xanh lá nhạt
                 GUI.backgroundColor = new Color(0.4f, 0.8f, 0.4f, 1f); // Xanh lá nhạt
                 if (GUILayout.Button("Show Loading", GUILayout.Height(25)))

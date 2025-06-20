@@ -835,15 +835,9 @@ public class ShopUISetup : MonoBehaviour
 
     public void OnRefreshClick()
     {
-        if (ShopManager.Instance != null)
-        {
-            ShowStatus("Refreshing shops...");
-            ShopManager.Instance.GetShopList();
-        }
-        else
-        {
-            ShowStatus("ShopManager not found!");
-        }
+        ShowLoading(true);
+        ShowStatus("Refreshing shops...");
+        LoadShopData();
     }
 
     public void OnBackToMainMenuClick()

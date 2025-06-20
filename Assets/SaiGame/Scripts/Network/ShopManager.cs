@@ -48,10 +48,6 @@ public class ShopManager : SaiSingleton<ShopManager>
         {
             APIManager.Instance.OnAuthenticationSuccess += OnAuthenticationSuccess;
         }
-        else
-        {
-            Debug.LogWarning("ShopManager: APIManager.Instance is null in OnEnable");
-        }
     }
 
     protected virtual void OnDisable()

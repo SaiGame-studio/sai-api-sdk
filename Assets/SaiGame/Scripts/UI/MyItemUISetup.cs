@@ -531,6 +531,7 @@ public class MyItemUISetup : MonoBehaviour
 
     public void OnRefreshClick()
     {
+        ShowLoading(true);
         ShowStatus("Refreshing items...");
         LoadPlayerItems();
     }

@@ -30,7 +30,7 @@ public abstract class SaiSingleton<T> : SaiBehaviour where T : SaiBehaviour
 
         if (_instance != this)
         {
-            Debug.LogWarning("Another instance of SingletonExample already exists!", gameObject);
+            //Debug.LogWarning("Another instance of SingletonExample already exists!", gameObject);
             Destroy(gameObject);
         }
     }

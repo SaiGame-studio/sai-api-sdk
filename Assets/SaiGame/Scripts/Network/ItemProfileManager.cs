@@ -34,10 +34,6 @@ public class ItemProfileManager : SaiSingleton<ItemProfileManager>
         {
             APIManager.Instance.OnAuthenticationSuccess += OnAuthenticationSuccess;
         }
-        else
-        {
-            if(showDebugLog) Debug.LogWarning("ItemProfileManager: APIManager.Instance is null in OnEnable");
-        }
     }
 
     protected virtual void OnDisable()

@@ -209,68 +209,103 @@ public class ShopUISetup : MonoBehaviour
         // Create Main Panel (removed Image component)
         GameObject mainPanel = CreateUIElement("ShopPanel", canvasGO.transform);
         // Removed Image component from ShopPanel
-        RectTransform mainRect = mainPanel.GetComponent<RectTransform>();
-        mainRect.sizeDelta = new Vector2(1600, 900);
+        SetFullScreen(mainPanel.GetComponent<RectTransform>());
 
-        // Create Top Buttons Panel (move higher)
-        GameObject topButtonsPanel = CreateUIElement("TopButtonsPanel", mainPanel.transform);
-        RectTransform topButtonsRect = topButtonsPanel.GetComponent<RectTransform>();
-        topButtonsRect.anchoredPosition = new Vector2(0, 340); // Move closer to top
-        topButtonsRect.sizeDelta = new Vector2(800, 80);
+        // Create Back to Main Menu button (position at top-left corner like MyItemUISetup)
+        GameObject backButtonGO = CreateButton("BackButton", "Back to Main Menu", mainPanel.transform);
+        backToMainMenuButton = backButtonGO.GetComponent<Button>();
+        TextMeshProUGUI backButtonText = backToMainMenuButton.GetComponentInChildren<TextMeshProUGUI>();
+        if (backButtonText != null)
+        {
+            backButtonText.alignment = TextAlignmentOptions.Center;
+            backButtonText.enableWordWrapping = true;
+            backButtonText.fontSize = 24;
+        }
+        Image backImage = backToMainMenuButton.GetComponent<Image>();
+        if (backImage != null)
+        {
+            backImage.color = new Color(0.2f, 0.6f, 1f, 1f); // Blue background
+        }
+        ColorBlock backCb = backToMainMenuButton.colors;
+        backCb.normalColor = new Color(0.2f, 0.6f, 1f, 1f);
+        backCb.highlightedColor = new Color(0.3f, 0.7f, 1f, 1f);
+        backCb.pressedColor = new Color(0.15f, 0.5f, 0.9f, 1f);
+        backToMainMenuButton.colors = backCb;
 
-        // Create Refresh Button
-        GameObject refreshBtn = CreateButton("RefreshButton", "REFRESH", topButtonsPanel.transform);
-        RectTransform refreshRect = refreshBtn.GetComponent<RectTransform>();
-        refreshRect.anchoredPosition = new Vector2(-200, 0);
-        refreshRect.sizeDelta = new Vector2(200, 60);
-        refreshButton = refreshBtn.GetComponent<Button>();
+        RectTransform backRect = backToMainMenuButton.GetComponent<RectTransform>();
+        backRect.anchorMin = new Vector2(0, 1);
+        backRect.anchorMax = new Vector2(0, 1);
+        backRect.pivot = new Vector2(0, 1);
+        backRect.anchoredPosition = new Vector2(20, -20); // Position at top-left corner
+        backRect.sizeDelta = new Vector2(200, 80);
 
-        // Set font size cho refresh button text
-        TextMeshProUGUI refreshText = refreshBtn.GetComponentInChildren<TextMeshProUGUI>();
-        if (refreshText != null)
-            refreshText.fontSize = 28;
+        // Create Refresh button and position it to the right of the Back button
+        GameObject refreshButtonGO = CreateButton("RefreshButton", "Refresh", mainPanel.transform);
+        refreshButton = refreshButtonGO.GetComponent<Button>();
+        
+        // Center the text in the refresh button
+        TextMeshProUGUI refreshButtonText = refreshButton.GetComponentInChildren<TextMeshProUGUI>();
+        if (refreshButtonText != null)
+        {
+            refreshButtonText.alignment = TextAlignmentOptions.Center;
+            refreshButtonText.fontSize = 24;
+        }
 
-        // Create Buy Item Button
-        GameObject buyItemBtn = CreateButton("BuyItemButton", "BUY ITEM", topButtonsPanel.transform);
-        RectTransform buyItemRect = buyItemBtn.GetComponent<RectTransform>();
-        buyItemRect.anchoredPosition = new Vector2(0, 0);
-        buyItemRect.sizeDelta = new Vector2(200, 60);
-        buyItemButton = buyItemBtn.GetComponent<Button>();
+        // Style the refresh button to look nicer
+        Image refreshImage = refreshButton.GetComponent<Image>();
+        if (refreshImage != null)
+        {
+            refreshImage.color = new Color(0.2f, 0.8f, 0.2f, 1f); // Green background
+        }
+        ColorBlock cb = refreshButton.colors;
+        cb.normalColor = new Color(0.2f, 0.8f, 0.2f, 1f);
+        cb.highlightedColor = new Color(0.3f, 0.9f, 0.3f, 1f); // Lighter green on highlight
+        cb.pressedColor = new Color(0.15f, 0.7f, 0.15f, 1f); // Darker green on press
+        refreshButton.colors = cb;
 
+        RectTransform refreshRect = refreshButton.GetComponent<RectTransform>();
+        refreshRect.anchorMin = new Vector2(0, 1);
+        refreshRect.anchorMax = new Vector2(0, 1);
+        refreshRect.pivot = new Vector2(0, 1);
+        // Position next to the back button: back button pos x (20) + back button width (200) + spacing (10)
+        refreshRect.anchoredPosition = new Vector2(230, -20); 
+        refreshRect.sizeDelta = new Vector2(120, 80);
+
+        // Create Buy Item Button and position it to the right of the Refresh button
+        GameObject buyItemButtonGO = CreateButton("BuyItemButton", "BUY ITEM", mainPanel.transform);
+        buyItemButton = buyItemButtonGO.GetComponent<Button>();
+        
         // Set color cho buy item button
-        Button buyItemBtnComp = buyItemBtn.GetComponent<Button>();
-        ColorBlock buyItemColors = buyItemBtnComp.colors;
-        buyItemColors.normalColor = new Color(0.2f, 0.8f, 0.2f, 1f); // Green color
-        buyItemBtnComp.colors = buyItemColors;
+        ColorBlock buyItemColors = buyItemButton.colors;
+        buyItemColors.normalColor = new Color(0.8f, 0.4f, 0.2f, 1f); // Orange color
+        buyItemColors.highlightedColor = new Color(0.9f, 0.5f, 0.3f, 1f);
+        buyItemColors.pressedColor = new Color(0.7f, 0.3f, 0.1f, 1f);
+        buyItemButton.colors = buyItemColors;
 
         // Set font size cho buy item button text
-        TextMeshProUGUI buyItemText = buyItemBtn.GetComponentInChildren<TextMeshProUGUI>();
+        TextMeshProUGUI buyItemText = buyItemButton.GetComponentInChildren<TextMeshProUGUI>();
         if (buyItemText != null)
-            buyItemText.fontSize = 28;
+        {
+            buyItemText.fontSize = 24;
+            buyItemText.alignment = TextAlignmentOptions.Center;
+        }
 
-        // Create Back Button
-        GameObject backBtn = CreateButton("BackButton", "BACK", topButtonsPanel.transform);
-        RectTransform backRect = backBtn.GetComponent<RectTransform>();
-        backRect.anchoredPosition = new Vector2(200, 0);
-        backRect.sizeDelta = new Vector2(200, 60);
-        backToMainMenuButton = backBtn.GetComponent<Button>();
+        RectTransform buyItemRect = buyItemButton.GetComponent<RectTransform>();
+        buyItemRect.anchorMin = new Vector2(0, 1);
+        buyItemRect.anchorMax = new Vector2(0, 1);
+        buyItemRect.pivot = new Vector2(0, 1);
+        // Position next to the refresh button: refresh button pos x (230) + refresh button width (120) + spacing (10)
+        buyItemRect.anchoredPosition = new Vector2(360, -20); 
+        buyItemRect.sizeDelta = new Vector2(200, 80);
 
-        // Set color cho back button
-        Button backBtnComp = backBtn.GetComponent<Button>();
-        ColorBlock backColors = backBtnComp.colors;
-        backColors.normalColor = new Color(0.8f, 0.4f, 0.4f, 1f);
-        backBtnComp.colors = backColors;
-
-        // Set font size cho back button text
-        TextMeshProUGUI backText = backBtn.GetComponentInChildren<TextMeshProUGUI>();
-        if (backText != null)
-            backText.fontSize = 28;
-
-        // Create Back to Shop Selection Button (initially hidden)
-        GameObject backToShopSelectionBtn = CreateButton("BackToShopSelectionButton", "BACK TO SHOPS", topButtonsPanel.transform);
+        // Create Back to Shop Selection Button (initially hidden, position at center of top area)
+        GameObject backToShopSelectionBtn = CreateButton("BackToShopSelectionButton", "BACK TO SHOPS", mainPanel.transform);
         RectTransform backToShopSelectionRect = backToShopSelectionBtn.GetComponent<RectTransform>();
-        backToShopSelectionRect.anchoredPosition = new Vector2(0, 0);
-        backToShopSelectionRect.sizeDelta = new Vector2(200, 60);
+        backToShopSelectionRect.anchorMin = new Vector2(0, 1);
+        backToShopSelectionRect.anchorMax = new Vector2(0, 1);
+        backToShopSelectionRect.pivot = new Vector2(0, 1);
+        backToShopSelectionRect.anchoredPosition = new Vector2(580, -20); // Position to the right of Buy Item button
+        backToShopSelectionRect.sizeDelta = new Vector2(200, 80);
         backToShopSelectionBtn.SetActive(false); // Initially hidden
 
         // Set color cho back to shop selection button
@@ -282,13 +317,18 @@ public class ShopUISetup : MonoBehaviour
         // Set font size cho back to shop selection button text
         TextMeshProUGUI backToShopSelectionText = backToShopSelectionBtn.GetComponentInChildren<TextMeshProUGUI>();
         if (backToShopSelectionText != null)
+        {
             backToShopSelectionText.fontSize = 24;
+            backToShopSelectionText.alignment = TextAlignmentOptions.Center;
+        }
 
-        // Create Shop Selection Panel (move higher and more to the left, but always inside UI)
+        // Create Shop Selection Panel (position below the buttons)
         GameObject shopSelectionPanelGO = CreateUIElement("ShopSelectionPanel", mainPanel.transform);
         RectTransform shopSelectionRect = shopSelectionPanelGO.GetComponent<RectTransform>();
-        shopSelectionRect.anchoredPosition = new Vector2(-500, 0); // 20px from left edge of mainPanel
-        shopSelectionRect.sizeDelta = new Vector2(320, 600); // Slightly narrower
+        shopSelectionRect.anchorMin = new Vector2(0, 0);
+        shopSelectionRect.anchorMax = new Vector2(0.3f, 0.9f); // Left 30% of screen, below buttons
+        shopSelectionRect.offsetMin = new Vector2(20, 20); // Margin from edges
+        shopSelectionRect.offsetMax = new Vector2(-10, -20);
         shopSelectionPanel = shopSelectionPanelGO;
         shopSelectionPanel.SetActive(true); // Always visible
 
@@ -343,11 +383,13 @@ public class ShopUISetup : MonoBehaviour
         // Update shopSelectionContainer to point to content
         shopSelectionContainer = shopSelectionContentGO.transform;
 
-        // Create Shop Items Panel (move higher and more to the right)
+        // Create Shop Items Panel (position to the right of shop selection panel)
         GameObject shopItemsPanelGO = CreateUIElement("ShopItemsPanel", mainPanel.transform);
         RectTransform shopItemsPanelRect = shopItemsPanelGO.GetComponent<RectTransform>();
-        shopItemsPanelRect.anchoredPosition = new Vector2(0, 60); // Move up and right, clear gap from ShopSelectionPanel
-        shopItemsPanelRect.sizeDelta = new Vector2(1100, 600); // Slightly wider
+        shopItemsPanelRect.anchorMin = new Vector2(0.3f, 0);
+        shopItemsPanelRect.anchorMax = new Vector2(1, 0.9f); // Right 70% of screen, below buttons
+        shopItemsPanelRect.offsetMin = new Vector2(10, 20); // Margin from edges
+        shopItemsPanelRect.offsetMax = new Vector2(-20, -20);
         shopItemsPanel = shopItemsPanelGO;
 
         // Create Shop Items Container with Grid Layout
@@ -399,19 +441,22 @@ public class ShopUISetup : MonoBehaviour
         // Create Shop Item Prefab
         CreateShopItemPrefab();
 
-        // Create Status Text (move higher)
+        // Create Status Text (position at bottom center)
         GameObject statusGO = CreateText("StatusText", "", mainPanel.transform, 24);
         RectTransform statusRect = statusGO.GetComponent<RectTransform>();
-        statusRect.anchoredPosition = new Vector2(0, -250); // Move up
-        statusRect.sizeDelta = new Vector2(800, 60);
+        statusRect.anchorMin = new Vector2(0, 0);
+        statusRect.anchorMax = new Vector2(1, 0.1f); // Bottom 10% of screen
+        statusRect.offsetMin = new Vector2(20, 10);
+        statusRect.offsetMax = new Vector2(-20, -10);
         statusText = statusGO.GetComponent<TextMeshProUGUI>();
         statusText.color = Color.yellow;
+        statusText.alignment = TextAlignmentOptions.Center;
 
-        // Create Loading Panel (move higher)
+        // Create Loading Panel (center of screen)
         GameObject loadingGO = CreateUIElement("LoadingPanel", mainPanel.transform);
         RectTransform loadingRect = loadingGO.GetComponent<RectTransform>();
         loadingRect.sizeDelta = new Vector2(400, 200);
-        loadingRect.anchoredPosition = new Vector2(0, 180); // Move up
+        loadingRect.anchoredPosition = new Vector2(0, 0); // Center of screen
         loadingPanel = loadingGO;
 
         // Add background to loading panel

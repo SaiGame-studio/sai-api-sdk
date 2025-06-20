@@ -8,7 +8,10 @@ public class MyItemUISetupEditor : Editor
 {
     public override void OnInspectorGUI()
     {
-        DrawDefaultInspector();
+        serializedObject.Update();
+
+        // Draw all properties except the ones we want to move
+        DrawPropertiesExcluding(serializedObject, "showDummyData", "dummyItemCount");
         
         MyItemUISetup myItemUISetup = (MyItemUISetup)target;
         
@@ -215,6 +218,9 @@ public class MyItemUISetupEditor : Editor
         
         if (Application.isEditor)
         {
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("showDummyData"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("dummyItemCount"));
+
             using (new EditorGUILayout.HorizontalScope())
             {
                 // Show Dummy Data button - Xanh lá
@@ -248,6 +254,8 @@ public class MyItemUISetupEditor : Editor
         {
             EditorGUILayout.HelpBox("Dummy data controls are only available in Editor mode.", MessageType.Info);
         }
+
+        serializedObject.ApplyModifiedProperties();
     }
 }
 #endif 

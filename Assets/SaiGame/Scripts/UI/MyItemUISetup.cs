@@ -26,6 +26,7 @@ public class MyItemUISetup : MonoBehaviour
 
     [Header("Scene Management")]
     public string mainMenuSceneName = "2_MainMenu";
+    public string shopSceneName = "3_Shop";
 
     // Private variables for tracking UI elements
     private List<GameObject> itemObjects = new List<GameObject>();
@@ -197,10 +198,10 @@ public class MyItemUISetup : MonoBehaviour
         // Create title
         titleText = CreateText("TitleText", "My Items", mainPanel.transform, 48).GetComponent<TextMeshProUGUI>();
         titleText.color = Color.white;
-        titleText.alignment = TextAlignmentOptions.Center;
+        titleText.alignment = TextAlignmentOptions.Right;
         RectTransform titleRect = titleText.GetComponent<RectTransform>();
-        titleRect.anchorMin = new Vector2(0, 0.9f);
-        titleRect.anchorMax = new Vector2(1, 1);
+        titleRect.anchorMin = new Vector2(0.7f, 0.9f);
+        titleRect.anchorMax = new Vector2(0.95f, 0.98f);
         titleRect.offsetMin = Vector2.zero;
         titleRect.offsetMax = Vector2.zero;
 
@@ -255,8 +256,8 @@ public class MyItemUISetup : MonoBehaviour
         itemScrollRect.vertical = true;
         itemScrollRect.horizontal = false;
 
-        // Create Back to Main Menu button
-        backToMainMenuButton = CreateButton("BackButton", "Back to Main Menu", mainPanel.transform);
+        // Create Main Menu button (changed from "Back to Main Menu")
+        backToMainMenuButton = CreateButton("BackButton", "Main Menu", mainPanel.transform);
         TextMeshProUGUI backButtonText = backToMainMenuButton.GetComponentInChildren<TextMeshProUGUI>();
         if (backButtonText != null)
         {
@@ -278,10 +279,38 @@ public class MyItemUISetup : MonoBehaviour
         backRect.anchorMin = new Vector2(0, 1);
         backRect.anchorMax = new Vector2(0, 1);
         backRect.pivot = new Vector2(0, 1);
-        backRect.anchoredPosition = new Vector2(20, -20); // Position at top-left
-        backRect.sizeDelta = new Vector2(200, 80); // Tăng chiều cao lên 80
+        // Position at top-left
+        backRect.anchoredPosition = new Vector2(20, -20);
+        backRect.sizeDelta = new Vector2(150, 80);
 
-        // Create Refresh button and position it to the right of the Back button
+        // Create Shops button (positioned to the right of Main Menu)
+        Button shopsButton = CreateButton("ShopsButton", "Shops", mainPanel.transform);
+        TextMeshProUGUI shopsButtonText = shopsButton.GetComponentInChildren<TextMeshProUGUI>();
+        if (shopsButtonText != null)
+        {
+            shopsButtonText.alignment = TextAlignmentOptions.Center;
+            shopsButtonText.enableWordWrapping = true;
+        }
+        Image shopsImage = shopsButton.GetComponent<Image>();
+        if (shopsImage != null)
+        {
+            shopsImage.color = new Color(0.8f, 0.4f, 0.2f, 1f); // Orange background
+        }
+        ColorBlock shopsCb = shopsButton.colors;
+        shopsCb.normalColor = new Color(0.8f, 0.4f, 0.2f, 1f);
+        shopsCb.highlightedColor = new Color(0.9f, 0.5f, 0.3f, 1f);
+        shopsCb.pressedColor = new Color(0.7f, 0.3f, 0.1f, 1f);
+        shopsButton.colors = shopsCb;
+
+        RectTransform shopsRect = shopsButton.GetComponent<RectTransform>();
+        shopsRect.anchorMin = new Vector2(0, 1);
+        shopsRect.anchorMax = new Vector2(0, 1);
+        shopsRect.pivot = new Vector2(0, 1);
+        // Position next to the main menu button: main menu button pos x (20) + main menu button width (150) + spacing (10)
+        shopsRect.anchoredPosition = new Vector2(180, -20);
+        shopsRect.sizeDelta = new Vector2(120, 80);
+
+        // Create Refresh button and position it to the right of the Shops button
         refreshButton = CreateButton("RefreshButton", "Refresh", mainPanel.transform);
         
         // Center the text in the refresh button
@@ -307,9 +336,9 @@ public class MyItemUISetup : MonoBehaviour
         refreshRect.anchorMin = new Vector2(0, 1);
         refreshRect.anchorMax = new Vector2(0, 1);
         refreshRect.pivot = new Vector2(0, 1);
-        // Position next to the back button: back button pos x (20) + back button width (200) + spacing (10)
-        refreshRect.anchoredPosition = new Vector2(230, -20); 
-        refreshRect.sizeDelta = new Vector2(120, 80); // Tăng chiều cao lên 80
+        // Position next to the shops button: shops button pos x (180) + shops button width (120) + spacing (10)
+        refreshRect.anchoredPosition = new Vector2(310, -20); 
+        refreshRect.sizeDelta = new Vector2(120, 80);
         
         // Create status text
         statusText = CreateText("StatusText", "", mainPanel.transform, 24).GetComponent<TextMeshProUGUI>();
@@ -393,6 +422,11 @@ public class MyItemUISetup : MonoBehaviour
 
         if (backToMainMenuButton != null)
             backToMainMenuButton.onClick.AddListener(OnBackToMainMenuClick);
+
+        // Find and setup shops button
+        Button shopsButton = GameObject.Find("ShopsButton")?.GetComponent<Button>();
+        if (shopsButton != null)
+            shopsButton.onClick.AddListener(OnShopsClick);
 
         if (playerItemManager != null)
             playerItemManager.OnPlayerItemsChanged += OnPlayerItemsLoaded;
@@ -482,6 +516,18 @@ public class MyItemUISetup : MonoBehaviour
         else
         {
             Debug.LogWarning("[MyItemUISetup] Main menu scene name not set");
+        }
+    }
+
+    public void OnShopsClick()
+    {
+        if (!string.IsNullOrEmpty(shopSceneName))
+        {
+            SceneController.LoadScene(shopSceneName);
+        }
+        else
+        {
+            Debug.LogWarning("[MyItemUISetup] Shop scene name not set");
         }
     }
 

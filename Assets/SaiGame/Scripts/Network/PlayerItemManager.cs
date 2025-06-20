@@ -1,8 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
 
-public class PlayerItemManager : MonoBehaviour
+public class PlayerItemManager : SaiSingleton<PlayerItemManager>
 {
     [Header("Player Items (Read Only)")]
     [SerializeField] protected bool showDebugLog = true;
@@ -11,42 +12,34 @@ public class PlayerItemManager : MonoBehaviour
     private List<InventoryItem> playerItems = new List<InventoryItem>();
     public List<InventoryItem> PlayerItems => playerItems;
 
-    public event System.Action<List<InventoryItem>> OnPlayerItemsChanged;
+    public event Action<List<InventoryItem>> OnPlayerItemsChanged;
 
-    [ContextMenu("Fetch Player Items")]
-    public void FetchPlayerItems()
+    public void GetPlayerItems(Action<List<InventoryItem>> onComplete)
     {
         string endpoint = $"/games/{APIManager.Instance.GameId}/items";
-        StartCoroutine(FetchPlayerItemsCoroutine(endpoint));
+        StartCoroutine(GetPlayerItemsCoroutine(endpoint, onComplete));
     }
 
-    private IEnumerator FetchPlayerItemsCoroutine(string endpoint)
+    private IEnumerator GetPlayerItemsCoroutine(string endpoint, Action<List<InventoryItem>> onComplete)
     {
-        bool done = false;
         PlayerItemListResponse result = null;
-        APIManager.Instance.StartCoroutine(GetPlayerItemsFromAPI(endpoint, (PlayerItemListResponse response) => {
+        yield return StartCoroutine(APIManager.Instance.GetRequest<PlayerItemListResponse>(endpoint, (response) => {
             result = response;
-            done = true;
         }));
-        while (!done) yield return null;
+
         if (result != null && result.data != null)
         {
             playerItems = new List<InventoryItem>(result.data);
             OnPlayerItemsChanged?.Invoke(playerItems);
+            onComplete?.Invoke(playerItems);
         }
         else
         {
-            Debug.LogWarning("No player items found in response.");
+            if (showDebugLog) Debug.LogWarning("No player items found in response.");
             playerItems = new List<InventoryItem>();
             OnPlayerItemsChanged?.Invoke(playerItems);
+            onComplete?.Invoke(new List<InventoryItem>()); // Still callback with empty list
         }
-    }
-
-    private IEnumerator GetPlayerItemsFromAPI(string endpoint, System.Action<PlayerItemListResponse> onComplete)
-    {
-        var method = typeof(APIManager).GetMethod("GetRequest", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var coroutine = (IEnumerator)method.MakeGenericMethod(typeof(PlayerItemListResponse)).Invoke(APIManager.Instance, new object[] { endpoint, onComplete });
-        yield return StartCoroutine(coroutine);
     }
 }
 

@@ -55,13 +55,13 @@ public class ShopManagerEditor : Editor
             {
                 selectedShopIndex = idx;
                 lastSelectedShopId = shopManager.selectedShopIdForEditor;
-                shopManager.FetchShopItems(shopManager.ShopList[selectedShopIndex].id);
+                shopManager.GetShopItems(shopManager.ShopList[selectedShopIndex].id);
             }
         }
 
         if (GUILayout.Button("Refresh Shops"))
         {
-            shopManager.FetchShopList();
+            shopManager.GetShopList();
         }
 
         // Shop Dropdown
@@ -79,7 +79,7 @@ public class ShopManagerEditor : Editor
                 selectedShopIndex = newSelectedIndex;
                 if (selectedShopIndex >= 0)
                 {
-                    shopManager.FetchShopItems(shopManager.ShopList[selectedShopIndex].id);
+                    shopManager.GetShopItems(shopManager.ShopList[selectedShopIndex].id);
                     shopManager.selectedShopIdForEditor = shopManager.ShopList[selectedShopIndex].id;
                     lastSelectedShopId = shopManager.selectedShopIdForEditor;
                 }

@@ -8,7 +8,10 @@ public class MyItemUISetupEditor : Editor
 {
     public override void OnInspectorGUI()
     {
-        DrawDefaultInspector();
+        serializedObject.Update();
+
+        // Draw all properties except the ones we want to move
+        DrawPropertiesExcluding(serializedObject, "showDummyData", "dummyItemCount");
         
         MyItemUISetup myItemUISetup = (MyItemUISetup)target;
         
@@ -49,15 +52,14 @@ public class MyItemUISetupEditor : Editor
         if (Application.isPlaying)
         {
             // APIManager status
-            APIManager apiManager = myItemUISetup.apiManager;
-            if (apiManager != null)
+            if (APIManager.Instance != null)
             {
-                bool hasToken = apiManager.HasValidToken();
+                bool hasToken = APIManager.Instance.HasValidToken();
                 string statusText = hasToken ? "User is logged in" : "No active session";
                 EditorGUILayout.LabelField("APIManager Status:", statusText);
                 if (hasToken)
                 {
-                    string currentToken = apiManager.GetAuthToken();
+                    string currentToken = APIManager.Instance.GetAuthToken();
                     string tokenPreview = !string.IsNullOrEmpty(currentToken) && currentToken.Length > 20 
                         ? currentToken.Substring(0, 20) + "..." 
                         : currentToken;
@@ -66,18 +68,17 @@ public class MyItemUISetupEditor : Editor
             }
             else
             {
-                EditorGUILayout.HelpBox("APIManager not assigned!", MessageType.Warning);
+                EditorGUILayout.HelpBox("APIManager instance not found!", MessageType.Warning);
             }
 
             // PlayerItemManager status
-            PlayerItemManager playerItemManager = myItemUISetup.playerItemManager;
-            if (playerItemManager != null)
+            if (PlayerItemManager.Instance != null)
             {
-                EditorGUILayout.LabelField("PlayerItemManager Status:", "✓ PlayerItemManager is ready");
+                EditorGUILayout.LabelField("PlayerItemManager Status:", "✓ PlayerItemManager instance is ready");
             }
             else
             {
-                EditorGUILayout.HelpBox("PlayerItemManager not assigned!", MessageType.Warning);
+                EditorGUILayout.HelpBox("PlayerItemManager instance not found!", MessageType.Warning);
             }
 
             GUILayout.Space(10);
@@ -125,22 +126,6 @@ public class MyItemUISetupEditor : Editor
                     myItemUISetup.OnBackToMainMenuClick();
                 }
                 GUI.backgroundColor = Color.white;
-
-                // Retry Load Data button - Cam
-                GUI.backgroundColor = new Color(1f, 0.6f, 0.2f, 1f);
-                if (GUILayout.Button("Retry Load Data", GUILayout.Height(25)))
-                {
-                    myItemUISetup.RetryLoadPlayerItems();
-                }
-                GUI.backgroundColor = Color.white;
-
-                // Force Load Data button - Đỏ nhạt
-                GUI.backgroundColor = new Color(0.8f, 0.3f, 0.3f, 1f);
-                if (GUILayout.Button("Force Load Data", GUILayout.Height(25)))
-                {
-                    myItemUISetup.ForceLoadPlayerItems();
-                }
-                GUI.backgroundColor = Color.white;
             }
         }
         else
@@ -149,61 +134,47 @@ public class MyItemUISetupEditor : Editor
         }
         
         GUILayout.Space(10);
-        
-        // Manager Integration Section
-        EditorGUILayout.LabelField("Manager Integration", EditorStyles.boldLabel);
-        
-        if (myItemUISetup.apiManager == null)
+
+        if (Application.isEditor)
         {
-            EditorGUILayout.HelpBox("APIManager is not assigned. The UI will try to find or create one automatically.", MessageType.Warning);
-            GUI.backgroundColor = new Color(0.4f, 0.6f, 1f, 1f);
-            if (GUILayout.Button("Find APIManager", GUILayout.Height(25)))
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("showDummyData"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("dummyItemCount"));
+
+            using (new EditorGUILayout.HorizontalScope())
             {
-                APIManager foundManager = FindFirstObjectByType<APIManager>();
-                if (foundManager != null)
+                // Show Dummy Data button - Xanh lá
+                GUI.backgroundColor = new Color(0.2f, 0.8f, 0.2f, 1f);
+                if (GUILayout.Button("Show Dummy Data", GUILayout.Height(25)))
                 {
-                    SerializedProperty apiManagerProp = serializedObject.FindProperty("apiManager");
-                    apiManagerProp.objectReferenceValue = foundManager;
-                    serializedObject.ApplyModifiedProperties();
-                    Debug.Log("[MyItemUISetupEditor] APIManager found and assigned.");
+                    myItemUISetup.ShowDummyDataButton();
                 }
-                else
+                GUI.backgroundColor = Color.white;
+
+                // Delete Dummy Data button - Đỏ
+                GUI.backgroundColor = new Color(0.8f, 0.2f, 0.2f, 1f);
+                if (GUILayout.Button("Delete Dummy Data", GUILayout.Height(25)))
                 {
-                    Debug.LogWarning("[MyItemUISetupEditor] No APIManager found in scene.");
+                    myItemUISetup.DeleteDummyDataButton();
                 }
+                GUI.backgroundColor = Color.white;
+            }
+
+            // Toggle Dummy Data button - Cam
+            GUI.backgroundColor = new Color(1f, 0.6f, 0.2f, 1f);
+            if (GUILayout.Button("Toggle Dummy Data", GUILayout.Height(25)))
+            {
+                myItemUISetup.ToggleDummyDataButton();
             }
             GUI.backgroundColor = Color.white;
+
+            EditorGUILayout.HelpBox("Dummy data helps you preview the UI layout without needing to play the game.", MessageType.Info);
         }
         else
         {
-            EditorGUILayout.HelpBox("APIManager is properly assigned.", MessageType.Info);
+            EditorGUILayout.HelpBox("Dummy data controls are only available in Editor mode.", MessageType.Info);
         }
 
-        if (myItemUISetup.playerItemManager == null)
-        {
-            EditorGUILayout.HelpBox("PlayerItemManager is not assigned. The UI will try to find or create one automatically.", MessageType.Warning);
-            GUI.backgroundColor = new Color(0.4f, 0.8f, 0.4f, 1f);
-            if (GUILayout.Button("Find PlayerItemManager", GUILayout.Height(25)))
-            {
-                PlayerItemManager foundManager = FindFirstObjectByType<PlayerItemManager>();
-                if (foundManager != null)
-                {
-                    SerializedProperty playerItemManagerProp = serializedObject.FindProperty("playerItemManager");
-                    playerItemManagerProp.objectReferenceValue = foundManager;
-                    serializedObject.ApplyModifiedProperties();
-                    Debug.Log("[MyItemUISetupEditor] PlayerItemManager found and assigned.");
-                }
-                else
-                {
-                    Debug.LogWarning("[MyItemUISetupEditor] No PlayerItemManager found in scene.");
-                }
-            }
-            GUI.backgroundColor = Color.white;
-        }
-        else
-        {
-            EditorGUILayout.HelpBox("PlayerItemManager is properly assigned.", MessageType.Info);
-        }
+        serializedObject.ApplyModifiedProperties();
     }
 }
 #endif 

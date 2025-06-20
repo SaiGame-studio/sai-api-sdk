@@ -1,8 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
 
-public class ItemProfileManager : MonoBehaviour
+public class ItemProfileManager : SaiSingleton<ItemProfileManager>
 {
     [Header("Debug Settings")]
     [SerializeField] protected bool showDebugLog = true;
@@ -13,16 +14,17 @@ public class ItemProfileManager : MonoBehaviour
 
     [Header("Item Profiles (Read Only)")]
     [SerializeField]
-    private List<ItemProfileSimple> itemProfiles = new List<ItemProfileSimple>();
-    public List<ItemProfileSimple> ItemProfiles => itemProfiles;
+    private List<ItemProfileData> itemProfiles = new List<ItemProfileData>();
+    public List<ItemProfileData> ItemProfiles => itemProfiles;
 
-    public event System.Action<List<ItemProfileSimple>> OnItemProfilesChanged;
+    public event Action<List<ItemProfileData>> OnItemProfilesChanged;
 
-    protected virtual void Start()
+    protected override void Awake()
     {
+        base.Awake();
         if (autoLoad && APIManager.Instance != null && APIManager.Instance.HasValidToken())
         {
-            FetchItemProfiles();
+            GetItemProfiles();
         }
     }
 
@@ -31,10 +33,6 @@ public class ItemProfileManager : MonoBehaviour
         if (APIManager.Instance != null)
         {
             APIManager.Instance.OnAuthenticationSuccess += OnAuthenticationSuccess;
-        }
-        else
-        {
-            Debug.LogWarning("ItemProfileManager: APIManager.Instance is null in OnEnable");
         }
     }
 
@@ -50,43 +48,35 @@ public class ItemProfileManager : MonoBehaviour
     {
         if (autoLoad)
         {
-            FetchItemProfiles();
+            GetItemProfiles();
         }
     }
 
-    [ContextMenu("Fetch Item Profiles")]
-    public void FetchItemProfiles()
+    public void GetItemProfiles(Action<List<ItemProfileData>> onComplete = null)
     {
         string endpoint = $"/games/{APIManager.Instance.GameId}/item-profiles";
-        StartCoroutine(FetchItemProfilesCoroutine(endpoint));
+        StartCoroutine(GetItemProfilesCoroutine(endpoint, onComplete));
     }
 
-    private IEnumerator FetchItemProfilesCoroutine(string endpoint)
+    private IEnumerator GetItemProfilesCoroutine(string endpoint, Action<List<ItemProfileData>> onComplete)
     {
-        bool done = false;
         ItemProfileListResponse result = null;
-        APIManager.Instance.StartCoroutine(GetItemProfilesFromAPI(endpoint, (ItemProfileListResponse response) => {
+        yield return StartCoroutine(APIManager.Instance.GetRequest<ItemProfileListResponse>(endpoint, (response) => {
             result = response;
-            done = true;
         }));
-        while (!done) yield return null;
+        
         if (result != null && result.data != null)
         {
-            itemProfiles = new List<ItemProfileSimple>(result.data);
+            itemProfiles = new List<ItemProfileData>(result.data);
             OnItemProfilesChanged?.Invoke(itemProfiles);
+            onComplete?.Invoke(itemProfiles);
         }
         else
         {
-            Debug.LogWarning("No item profiles found in response.");
-            itemProfiles = new List<ItemProfileSimple>();
+            if(showDebugLog) Debug.LogWarning("No item profiles found in response.");
+            itemProfiles = new List<ItemProfileData>();
             OnItemProfilesChanged?.Invoke(itemProfiles);
+            onComplete?.Invoke(new List<ItemProfileData>());
         }
-    }
-
-    private IEnumerator GetItemProfilesFromAPI(string endpoint, System.Action<ItemProfileListResponse> onComplete)
-    {
-        var method = typeof(APIManager).GetMethod("GetRequest", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var coroutine = (IEnumerator)method.MakeGenericMethod(typeof(ItemProfileListResponse)).Invoke(APIManager.Instance, new object[] { endpoint, onComplete });
-        yield return StartCoroutine(coroutine);
     }
 } 

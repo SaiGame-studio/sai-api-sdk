@@ -36,7 +36,6 @@ public static class SceneController
             Debug.LogWarning($"SceneController: Scene name '{sceneName}' is not defined in SceneNames. Loading anyway...");
         }
         
-        Debug.Log($"SceneController: Loading scene '{sceneName}'");
         OnSceneLoadStarted?.Invoke(sceneName);
         
         try

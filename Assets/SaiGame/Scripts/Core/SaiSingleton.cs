@@ -8,7 +8,7 @@ public abstract class SaiSingleton<T> : SaiBehaviour where T : SaiBehaviour
     {
         get
         {
-            if (_instance == null) Debug.LogWarning("Singleton instance has not been created yet!");
+            //if (_instance == null) Debug.LogWarning("Singleton instance has not been created yet!");
             return _instance;
         }
     }
@@ -30,7 +30,7 @@ public abstract class SaiSingleton<T> : SaiBehaviour where T : SaiBehaviour
 
         if (_instance != this)
         {
-            Debug.LogWarning("Another instance of SingletonExample already exists!", gameObject);
+            //Debug.LogWarning("Another instance of SingletonExample already exists!", gameObject);
             Destroy(gameObject);
         }
     }

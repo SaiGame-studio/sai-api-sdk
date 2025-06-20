@@ -8,7 +8,10 @@ public class ShopUISetupEditor : Editor
 {
     public override void OnInspectorGUI()
     {
-        DrawDefaultInspector();
+        serializedObject.Update();
+
+        // Draw all properties except the ones we want to move
+        DrawPropertiesExcluding(serializedObject, "showDummyData", "dummyShopCount", "dummyItemCount");
         
         ShopUISetup shopUISetup = (ShopUISetup)target;
         
@@ -50,16 +53,15 @@ public class ShopUISetupEditor : Editor
         if (Application.isPlaying)
         {
             // Show current APIManager status
-            APIManager apiManager = shopUISetup.apiManager;
-            if (apiManager != null)
+            if (APIManager.Instance != null)
             {
-                bool hasToken = apiManager.HasValidToken();
+                bool hasToken = APIManager.Instance.HasValidToken();
                 string statusText = hasToken ? "User is logged in" : "No active session";
                 EditorGUILayout.LabelField("APIManager Status:", statusText);
                 
                 if (hasToken)
                 {
-                    string currentToken = apiManager.GetAuthToken();
+                    string currentToken = APIManager.Instance.GetAuthToken();
                     string tokenPreview = !string.IsNullOrEmpty(currentToken) && currentToken.Length > 20 
                         ? currentToken.Substring(0, 20) + "..." 
                         : currentToken;
@@ -68,18 +70,17 @@ public class ShopUISetupEditor : Editor
             }
             else
             {
-                EditorGUILayout.HelpBox("APIManager not assigned!", MessageType.Warning);
+                EditorGUILayout.HelpBox("APIManager instance not found!", MessageType.Warning);
             }
 
             // Show ShopManager status
-            ShopManager shopManager = shopUISetup.shopManager;
-            if (shopManager != null)
+            if (ShopManager.Instance != null)
             {
-                EditorGUILayout.LabelField("ShopManager Status:", "✓ ShopManager is ready");
+                EditorGUILayout.LabelField("ShopManager Status:", "✓ ShopManager instance is ready");
             }
             else
             {
-                EditorGUILayout.HelpBox("ShopManager not assigned!", MessageType.Warning);
+                EditorGUILayout.HelpBox("ShopManager instance not found!", MessageType.Warning);
             }
             
             GUILayout.Space(10);
@@ -131,22 +132,6 @@ public class ShopUISetupEditor : Editor
                     shopUISetup.OnBackToMainMenuClick();
                 }
                 GUI.backgroundColor = Color.white;
-
-                // Retry Load Data button - Màu cam
-                GUI.backgroundColor = new Color(1f, 0.6f, 0.2f, 1f); // Cam
-                if (GUILayout.Button("Retry Load Data", GUILayout.Height(25)))
-                {
-                    shopUISetup.RetryLoadShopData();
-                }
-                GUI.backgroundColor = Color.white;
-
-                // Force Load Data button - Màu đỏ nhạt
-                GUI.backgroundColor = new Color(0.8f, 0.3f, 0.3f, 1f); // Đỏ nhạt
-                if (GUILayout.Button("Force Load Data", GUILayout.Height(25)))
-                {
-                    shopUISetup.ForceLoadShopData();
-                }
-                GUI.backgroundColor = Color.white;
             }
         }
         else
@@ -156,67 +141,7 @@ public class ShopUISetupEditor : Editor
         
         GUILayout.Space(10);
         
-        // Manager Integration Section
-        EditorGUILayout.LabelField("Manager Integration", EditorStyles.boldLabel);
-        
-        if (shopUISetup.apiManager == null)
-        {
-            EditorGUILayout.HelpBox("APIManager is not assigned. The UI will try to find or create one automatically.", MessageType.Warning);
-            
-            // Find APIManager button - Màu xanh dương nhạt
-            GUI.backgroundColor = new Color(0.4f, 0.6f, 1f, 1f); // Xanh dương nhạt
-            if (GUILayout.Button("Find APIManager", GUILayout.Height(25)))
-            {
-                APIManager foundManager = FindFirstObjectByType<APIManager>();
-                if (foundManager != null)
-                {
-                    SerializedProperty apiManagerProp = serializedObject.FindProperty("apiManager");
-                    apiManagerProp.objectReferenceValue = foundManager;
-                    serializedObject.ApplyModifiedProperties();
-                    Debug.Log("[ShopUISetupEditor] APIManager found and assigned.");
-                }
-                else
-                {
-                    Debug.LogWarning("[ShopUISetupEditor] No APIManager found in scene.");
-                }
-            }
-            GUI.backgroundColor = Color.white;
-        }
-        else
-        {
-            EditorGUILayout.HelpBox("APIManager is properly assigned.", MessageType.Info);
-        }
-
-        if (shopUISetup.shopManager == null)
-        {
-            EditorGUILayout.HelpBox("ShopManager is not assigned. The UI will try to find or create one automatically.", MessageType.Warning);
-            
-            // Find ShopManager button - Màu xanh lá nhạt
-            GUI.backgroundColor = new Color(0.4f, 0.8f, 0.4f, 1f); // Xanh lá nhạt
-            if (GUILayout.Button("Find ShopManager", GUILayout.Height(25)))
-            {
-                ShopManager foundManager = FindFirstObjectByType<ShopManager>();
-                if (foundManager != null)
-                {
-                    SerializedProperty shopManagerProp = serializedObject.FindProperty("shopManager");
-                    shopManagerProp.objectReferenceValue = foundManager;
-                    serializedObject.ApplyModifiedProperties();
-                    Debug.Log("[ShopUISetupEditor] ShopManager found and assigned.");
-                }
-                else
-                {
-                    Debug.LogWarning("[ShopUISetupEditor] No ShopManager found in scene.");
-                }
-            }
-            GUI.backgroundColor = Color.white;
-        }
-        else
-        {
-            EditorGUILayout.HelpBox("ShopManager is properly assigned.", MessageType.Info);
-        }
-        
         // UI Status Section
-        GUILayout.Space(10);
         EditorGUILayout.LabelField("UI Status", EditorStyles.boldLabel);
         
         Canvas existingCanvas = FindFirstObjectByType<Canvas>();
@@ -246,10 +171,60 @@ public class ShopUISetupEditor : Editor
             int itemCount = shopUISetup.shopItemContainer.childCount;
             EditorGUILayout.LabelField("Shop Items Count:", itemCount.ToString());
         }
+
+        // Shop Selection Status
+        if (shopUISetup.shopSelectionContainer != null)
+        {
+            int shopCount = shopUISetup.shopSelectionContainer.childCount;
+            EditorGUILayout.LabelField("Shop Selection Count:", shopCount.ToString());
+        }
+
+        GUILayout.Space(10);
+        
+        // Dummy Data Section
+        EditorGUILayout.LabelField("Dummy Data", EditorStyles.boldLabel);
+        
+        if (Application.isEditor)
+        {
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("showDummyData"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("dummyShopCount"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("dummyItemCount"));
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                // Show Dummy Data button - Màu xanh lá
+                GUI.backgroundColor = new Color(0.2f, 0.8f, 0.2f, 1f);
+                if (GUILayout.Button("Show Dummy Data", GUILayout.Height(25)))
+                {
+                    shopUISetup.ShowDummyDataButton();
+                }
+                GUI.backgroundColor = Color.white;
+
+                // Delete Dummy Data button - Màu đỏ
+                GUI.backgroundColor = new Color(0.8f, 0.2f, 0.2f, 1f);
+                if (GUILayout.Button("Delete Dummy Data", GUILayout.Height(25)))
+                {
+                    shopUISetup.DeleteDummyDataButton();
+                }
+                GUI.backgroundColor = Color.white;
+            }
+
+            // Toggle Dummy Data button - Màu cam
+            GUI.backgroundColor = new Color(1f, 0.6f, 0.2f, 1f);
+            if (GUILayout.Button("Toggle Dummy Data", GUILayout.Height(25)))
+            {
+                shopUISetup.ToggleDummyDataButton();
+            }
+            GUI.backgroundColor = Color.white;
+
+            EditorGUILayout.HelpBox("Dummy data helps you preview the UI layout without needing to play the game.", MessageType.Info);
+        }
         else
         {
-            EditorGUILayout.LabelField("Shop Items Container:", "✗ Not found");
+            EditorGUILayout.HelpBox("Dummy data controls are only available in Editor mode.", MessageType.Info);
         }
+
+        serializedObject.ApplyModifiedProperties();
     }
 }
 #endif 

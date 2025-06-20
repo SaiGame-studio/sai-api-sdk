@@ -10,7 +10,7 @@ public class ItemProfileManagerEditor : Editor
         ItemProfileManager manager = (ItemProfileManager)target;
         if (GUILayout.Button("Refresh Items"))
         {
-            manager.FetchItemProfiles();
+            manager.GetItemProfiles();
         }
     }
 } 

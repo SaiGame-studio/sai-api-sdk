@@ -12,7 +12,6 @@ public class ShopUISetup : MonoBehaviour
 
     [Header("APIManager Integration")]
     public APIManager apiManager;
-    public ShopManager shopManager;
 
     [Header("UI References (Auto-assigned)")]
     [SerializeField] public Transform shopItemContainer;
@@ -29,17 +28,53 @@ public class ShopUISetup : MonoBehaviour
     [SerializeField] public GameObject shopItemsPanel;
 
     [Header("Scene Management")]
-    public string mainMenuSceneName = "2_MainMenu";
+    public string mainMenuSceneName = SceneNames.MAIN_MENU;
+    public string myItemSceneName = SceneNames.MY_ITEMS;
+
+    [Header("Dummy Data (Editor Only)")]
+    public bool showDummyData = true;
+    public int dummyShopCount = 6;
+    public int dummyItemCount = 12;
 
     // Private variables for tracking UI elements
     private List<GameObject> shopItems = new List<GameObject>();
     private List<GameObject> shopSelectionItems = new List<GameObject>();
     private ShopData selectedShop = null;
 
+    void Awake()
+    {
+        // Khi play game thì ẩn dummy data đi bằng cách xóa các item con
+        if (Application.isPlaying)
+        {
+            // Xóa các items trong shop selection
+            if (shopSelectionContainer != null)
+            {
+                foreach (Transform child in shopSelectionContainer)
+                {
+                    Destroy(child.gameObject);
+                }
+            }
+            if (shopSelectionItems != null) shopSelectionItems.Clear();
+
+            // Xóa các items trong shop
+            if (shopItemContainer != null)
+            {
+                foreach (Transform child in shopItemContainer)
+                {
+                    Destroy(child.gameObject);
+                }
+            }
+            if (shopItems != null) shopItems.Clear();
+        }
+    }
+
     void Start()
     {
-        // Tự động tìm và liên kết APIManager và ShopManager một lần duy nhất
-        AutoLinkManagers();
+        // Tự động tìm và liên kết APIManager
+        if (apiManager == null)
+        {
+            apiManager = APIManager.Instance;
+        }
 
         if (autoSetup)
         {
@@ -52,26 +87,12 @@ public class ShopUISetup : MonoBehaviour
         StartCoroutine(DelayedLoadShopData());
     }
 
-    private void AutoLinkManagers()
+    private void OnValidate()
     {
-        // Tự động tìm và liên kết APIManager
-        if (apiManager == null)
+        // Tạo dummy data khi ở Editor mode và không play game
+        if (showDummyData && !Application.isPlaying && autoSetup)
         {
-            apiManager = FindFirstObjectByType<APIManager>();
-            if (apiManager == null)
-            {
-                Debug.LogWarning("[ShopUISetup] ✗ APIManager not found in scene");
-            }
-        }
-
-        // Tự động tìm và liên kết ShopManager
-        if (shopManager == null)
-        {
-            shopManager = FindFirstObjectByType<ShopManager>();
-            if (shopManager == null)
-            {
-                Debug.LogWarning("[ShopUISetup] ✗ ShopManager not found in scene");
-            }
+            CreateShopUI();
         }
     }
 
@@ -80,36 +101,44 @@ public class ShopUISetup : MonoBehaviour
         // Đợi một frame
         yield return null;
         
-        // Kiểm tra lại APIManager và ShopManager
-        AutoLinkManagers();
-        
-        // Đợi thêm một frame nữa để đảm bảo managers đã sẵn sàng
-        yield return null;
-        
         // Kiểm tra xem có token hợp lệ không
-        if (apiManager != null && apiManager.HasValidToken())
+        if (APIManager.Instance != null && APIManager.Instance.HasValidToken())
         {
             LoadShopData();
         }
         else
         {
-            Debug.LogWarning("[ShopUISetup] APIManager not found or no valid token. Waiting for authentication...");
-            ShowStatus("Waiting for authentication...");
+            Debug.LogWarning("[ShopUISetup] APIManager not found or no valid token. Loading dummy data...");
+            ShowStatus("Loading dummy data...");
+            
+            // Load dummy data khi không có authentication (chỉ trong editor)
+            if (Application.isEditor && showDummyData)
+            {
+                LoadDummyData();
+            }
+            else
+            {
+                ShowStatus("Waiting for authentication...");
+            }
             
             // Nếu chưa có token, đợi authentication
-            if (apiManager != null)
+            if (APIManager.Instance != null)
             {
-                apiManager.OnAuthenticationSuccess += OnAuthenticationSuccess;
+                APIManager.Instance.OnAuthenticationSuccess += OnAuthenticationSuccess;
             }
         }
     }
 
     private void OnAuthenticationSuccess()
     {
-        if (apiManager != null)
+        if (APIManager.Instance != null)
         {
-            apiManager.OnAuthenticationSuccess -= OnAuthenticationSuccess;
+            APIManager.Instance.OnAuthenticationSuccess -= OnAuthenticationSuccess;
         }
+        
+        // Clear dummy data and load real data
+        ClearShopSelectionItems();
+        ClearShopItems();
         LoadShopData();
     }
 
@@ -209,68 +238,135 @@ public class ShopUISetup : MonoBehaviour
         // Create Main Panel (removed Image component)
         GameObject mainPanel = CreateUIElement("ShopPanel", canvasGO.transform);
         // Removed Image component from ShopPanel
-        RectTransform mainRect = mainPanel.GetComponent<RectTransform>();
-        mainRect.sizeDelta = new Vector2(1600, 900);
+        SetFullScreen(mainPanel.GetComponent<RectTransform>());
 
-        // Create Top Buttons Panel (move higher)
-        GameObject topButtonsPanel = CreateUIElement("TopButtonsPanel", mainPanel.transform);
-        RectTransform topButtonsRect = topButtonsPanel.GetComponent<RectTransform>();
-        topButtonsRect.anchoredPosition = new Vector2(0, 340); // Move closer to top
-        topButtonsRect.sizeDelta = new Vector2(800, 80);
+        // Create Back to Main Menu button (position at top-left corner like MyItemUISetup)
+        GameObject backButtonGO = CreateButton("BackButton", "Main Menu", mainPanel.transform);
+        backToMainMenuButton = backButtonGO.GetComponent<Button>();
+        TextMeshProUGUI backButtonText = backToMainMenuButton.GetComponentInChildren<TextMeshProUGUI>();
+        if (backButtonText != null)
+        {
+            backButtonText.alignment = TextAlignmentOptions.Center;
+            backButtonText.enableWordWrapping = true;
+            backButtonText.fontSize = 24;
+        }
+        Image backImage = backToMainMenuButton.GetComponent<Image>();
+        if (backImage != null)
+        {
+            backImage.color = new Color(0.2f, 0.6f, 1f, 1f); // Blue background
+        }
+        ColorBlock backCb = backToMainMenuButton.colors;
+        backCb.normalColor = new Color(0.2f, 0.6f, 1f, 1f);
+        backCb.highlightedColor = new Color(0.3f, 0.7f, 1f, 1f);
+        backCb.pressedColor = new Color(0.15f, 0.5f, 0.9f, 1f);
+        backToMainMenuButton.colors = backCb;
 
-        // Create Refresh Button
-        GameObject refreshBtn = CreateButton("RefreshButton", "REFRESH", topButtonsPanel.transform);
-        RectTransform refreshRect = refreshBtn.GetComponent<RectTransform>();
-        refreshRect.anchoredPosition = new Vector2(-200, 0);
-        refreshRect.sizeDelta = new Vector2(200, 60);
-        refreshButton = refreshBtn.GetComponent<Button>();
+        RectTransform backRect = backToMainMenuButton.GetComponent<RectTransform>();
+        backRect.anchorMin = new Vector2(0, 1);
+        backRect.anchorMax = new Vector2(0, 1);
+        backRect.pivot = new Vector2(0, 1);
+        backRect.anchoredPosition = new Vector2(20, -20); // Position at top-left corner
+        backRect.sizeDelta = new Vector2(200, 80);
 
-        // Set font size cho refresh button text
-        TextMeshProUGUI refreshText = refreshBtn.GetComponentInChildren<TextMeshProUGUI>();
-        if (refreshText != null)
-            refreshText.fontSize = 28;
+        // Create My Item button and position it to the right of the Main Menu button
+        GameObject myItemButtonGO = CreateButton("MyItemButton", "My Item", mainPanel.transform);
+        Button myItemButton = myItemButtonGO.GetComponent<Button>();
+        
+        // Center the text in the my item button
+        TextMeshProUGUI myItemButtonText = myItemButton.GetComponentInChildren<TextMeshProUGUI>();
+        if (myItemButtonText != null)
+        {
+            myItemButtonText.alignment = TextAlignmentOptions.Center;
+            myItemButtonText.fontSize = 24;
+        }
 
-        // Create Buy Item Button
-        GameObject buyItemBtn = CreateButton("BuyItemButton", "BUY ITEM", topButtonsPanel.transform);
-        RectTransform buyItemRect = buyItemBtn.GetComponent<RectTransform>();
-        buyItemRect.anchoredPosition = new Vector2(0, 0);
-        buyItemRect.sizeDelta = new Vector2(200, 60);
-        buyItemButton = buyItemBtn.GetComponent<Button>();
+        // Style the my item button
+        Image myItemImage = myItemButton.GetComponent<Image>();
+        if (myItemImage != null)
+        {
+            myItemImage.color = new Color(0.8f, 0.4f, 0.8f, 1f); // Purple background
+        }
+        ColorBlock myItemCb = myItemButton.colors;
+        myItemCb.normalColor = new Color(0.8f, 0.4f, 0.8f, 1f);
+        myItemCb.highlightedColor = new Color(0.9f, 0.5f, 0.9f, 1f);
+        myItemCb.pressedColor = new Color(0.7f, 0.3f, 0.7f, 1f);
+        myItemButton.colors = myItemCb;
 
+        RectTransform myItemRect = myItemButton.GetComponent<RectTransform>();
+        myItemRect.anchorMin = new Vector2(0, 1);
+        myItemRect.anchorMax = new Vector2(0, 1);
+        myItemRect.pivot = new Vector2(0, 1);
+        // Position next to the main menu button: main menu pos x (20) + main menu width (200) + spacing (10)
+        myItemRect.anchoredPosition = new Vector2(230, -20); 
+        myItemRect.sizeDelta = new Vector2(150, 80);
+
+        // Create Refresh button and position it to the right of the My Item button
+        GameObject refreshButtonGO = CreateButton("RefreshButton", "Refresh", mainPanel.transform);
+        refreshButton = refreshButtonGO.GetComponent<Button>();
+        
+        // Center the text in the refresh button
+        TextMeshProUGUI refreshButtonText = refreshButton.GetComponentInChildren<TextMeshProUGUI>();
+        if (refreshButtonText != null)
+        {
+            refreshButtonText.alignment = TextAlignmentOptions.Center;
+            refreshButtonText.fontSize = 24;
+        }
+
+        // Style the refresh button to look nicer
+        Image refreshImage = refreshButton.GetComponent<Image>();
+        if (refreshImage != null)
+        {
+            refreshImage.color = new Color(0.2f, 0.8f, 0.2f, 1f); // Green background
+        }
+        ColorBlock cb = refreshButton.colors;
+        cb.normalColor = new Color(0.2f, 0.8f, 0.2f, 1f);
+        cb.highlightedColor = new Color(0.3f, 0.9f, 0.3f, 1f); // Lighter green on highlight
+        cb.pressedColor = new Color(0.15f, 0.7f, 0.15f, 1f); // Darker green on press
+        refreshButton.colors = cb;
+
+        RectTransform refreshRect = refreshButton.GetComponent<RectTransform>();
+        refreshRect.anchorMin = new Vector2(0, 1);
+        refreshRect.anchorMax = new Vector2(0, 1);
+        refreshRect.pivot = new Vector2(0, 1);
+        // Position next to the my item button: my item pos x (230) + my item width (150) + spacing (10)
+        refreshRect.anchoredPosition = new Vector2(390, -20); 
+        refreshRect.sizeDelta = new Vector2(120, 80);
+
+        // Create Buy Item Button and position it to the right of the Refresh button
+        GameObject buyItemButtonGO = CreateButton("BuyItemButton", "BUY ITEM", mainPanel.transform);
+        buyItemButton = buyItemButtonGO.GetComponent<Button>();
+        
         // Set color cho buy item button
-        Button buyItemBtnComp = buyItemBtn.GetComponent<Button>();
-        ColorBlock buyItemColors = buyItemBtnComp.colors;
-        buyItemColors.normalColor = new Color(0.2f, 0.8f, 0.2f, 1f); // Green color
-        buyItemBtnComp.colors = buyItemColors;
+        ColorBlock buyItemColors = buyItemButton.colors;
+        buyItemColors.normalColor = new Color(0.8f, 0.4f, 0.2f, 1f); // Orange color
+        buyItemColors.highlightedColor = new Color(0.9f, 0.5f, 0.3f, 1f);
+        buyItemColors.pressedColor = new Color(0.7f, 0.3f, 0.1f, 1f);
+        buyItemButton.colors = buyItemColors;
 
         // Set font size cho buy item button text
-        TextMeshProUGUI buyItemText = buyItemBtn.GetComponentInChildren<TextMeshProUGUI>();
+        TextMeshProUGUI buyItemText = buyItemButton.GetComponentInChildren<TextMeshProUGUI>();
         if (buyItemText != null)
-            buyItemText.fontSize = 28;
+        {
+            buyItemText.fontSize = 24;
+            buyItemText.alignment = TextAlignmentOptions.Center;
+        }
 
-        // Create Back Button
-        GameObject backBtn = CreateButton("BackButton", "BACK", topButtonsPanel.transform);
-        RectTransform backRect = backBtn.GetComponent<RectTransform>();
-        backRect.anchoredPosition = new Vector2(200, 0);
-        backRect.sizeDelta = new Vector2(200, 60);
-        backToMainMenuButton = backBtn.GetComponent<Button>();
+        RectTransform buyItemRect = buyItemButton.GetComponent<RectTransform>();
+        buyItemRect.anchorMin = new Vector2(0, 1);
+        buyItemRect.anchorMax = new Vector2(0, 1);
+        buyItemRect.pivot = new Vector2(0, 1);
+        // Position next to the refresh button: refresh pos x (390) + refresh width (120) + spacing (10)
+        buyItemRect.anchoredPosition = new Vector2(520, -20); 
+        buyItemRect.sizeDelta = new Vector2(200, 80);
 
-        // Set color cho back button
-        Button backBtnComp = backBtn.GetComponent<Button>();
-        ColorBlock backColors = backBtnComp.colors;
-        backColors.normalColor = new Color(0.8f, 0.4f, 0.4f, 1f);
-        backBtnComp.colors = backColors;
-
-        // Set font size cho back button text
-        TextMeshProUGUI backText = backBtn.GetComponentInChildren<TextMeshProUGUI>();
-        if (backText != null)
-            backText.fontSize = 28;
-
-        // Create Back to Shop Selection Button (initially hidden)
-        GameObject backToShopSelectionBtn = CreateButton("BackToShopSelectionButton", "BACK TO SHOPS", topButtonsPanel.transform);
+        // Create Back to Shop Selection Button (initially hidden, position at center of top area)
+        GameObject backToShopSelectionBtn = CreateButton("BackToShopSelectionButton", "BACK TO SHOPS", mainPanel.transform);
         RectTransform backToShopSelectionRect = backToShopSelectionBtn.GetComponent<RectTransform>();
-        backToShopSelectionRect.anchoredPosition = new Vector2(0, 0);
-        backToShopSelectionRect.sizeDelta = new Vector2(200, 60);
+        backToShopSelectionRect.anchorMin = new Vector2(0, 1);
+        backToShopSelectionRect.anchorMax = new Vector2(0, 1);
+        backToShopSelectionRect.pivot = new Vector2(0, 1);
+        backToShopSelectionRect.anchoredPosition = new Vector2(580, -20); // Position to the right of Buy Item button
+        backToShopSelectionRect.sizeDelta = new Vector2(200, 80);
         backToShopSelectionBtn.SetActive(false); // Initially hidden
 
         // Set color cho back to shop selection button
@@ -282,33 +378,28 @@ public class ShopUISetup : MonoBehaviour
         // Set font size cho back to shop selection button text
         TextMeshProUGUI backToShopSelectionText = backToShopSelectionBtn.GetComponentInChildren<TextMeshProUGUI>();
         if (backToShopSelectionText != null)
+        {
             backToShopSelectionText.fontSize = 24;
+            backToShopSelectionText.alignment = TextAlignmentOptions.Center;
+        }
 
-        // Create Shop Selection Panel (move higher and more to the left, but always inside UI)
+        // Create Shop Selection Panel (position below the buttons at top-left)
         GameObject shopSelectionPanelGO = CreateUIElement("ShopSelectionPanel", mainPanel.transform);
         RectTransform shopSelectionRect = shopSelectionPanelGO.GetComponent<RectTransform>();
-        shopSelectionRect.anchoredPosition = new Vector2(-500, 0); // 20px from left edge of mainPanel
-        shopSelectionRect.sizeDelta = new Vector2(320, 600); // Slightly narrower
+        shopSelectionRect.anchorMin = new Vector2(0, 1);
+        shopSelectionRect.anchorMax = new Vector2(0, 1);
+        shopSelectionRect.pivot = new Vector2(0, 1);
+        // Position below the buttons: buttons are at y=-20, button height=80, spacing=50
+        shopSelectionRect.anchoredPosition = new Vector2(20, -150); // -20 - 80 - 50 = -150
+        shopSelectionRect.sizeDelta = new Vector2(430, 600); // Increased width for larger buttons (400 + 15*2)
         shopSelectionPanel = shopSelectionPanelGO;
         shopSelectionPanel.SetActive(true); // Always visible
 
-        // Add Title to Shop Grid (left-aligned)
-        GameObject shopGridTitleGO = CreateText("ShopGridTitle", "Shops", shopSelectionPanelGO.transform, 28);
-        RectTransform shopGridTitleRect = shopGridTitleGO.GetComponent<RectTransform>();
-        shopGridTitleRect.pivot = new Vector2(0, 1);
-        shopGridTitleRect.anchorMin = new Vector2(0, 1);
-        shopGridTitleRect.anchorMax = new Vector2(0, 1);
-        shopGridTitleRect.anchoredPosition = new Vector2(0, 0); // Top left inside panel
-        shopGridTitleRect.sizeDelta = new Vector2(200, 40);
-        TextMeshProUGUI shopGridTitleText = shopGridTitleGO.GetComponent<TextMeshProUGUI>();
-        shopGridTitleText.alignment = TMPro.TextAlignmentOptions.TopLeft;
-        shopGridTitleGO.SetActive(true); // Always visible
-
-        // Create Shop Selection Container with Grid Layout
+        // Create Shop Selection Container with Grid Layout (use full panel space)
         GameObject shopSelectionContainerGO = CreateUIElement("ShopSelectionContainer", shopSelectionPanelGO.transform);
         RectTransform shopSelectionContainerRect = shopSelectionContainerGO.GetComponent<RectTransform>();
-        shopSelectionContainerRect.anchoredPosition = new Vector2(0, 50);
-        shopSelectionContainerRect.sizeDelta = new Vector2(400, 400);
+        shopSelectionContainerRect.anchoredPosition = new Vector2(0, 0);
+        shopSelectionContainerRect.sizeDelta = new Vector2(430, 600); // Use full panel space
         shopSelectionContainer = shopSelectionContainerGO.transform;
 
         // Add ScrollRect to shop selection container
@@ -317,7 +408,7 @@ public class ShopUISetup : MonoBehaviour
         // Create Content for Shop Selection ScrollRect
         GameObject shopSelectionContentGO = CreateUIElement("ShopSelectionContent", shopSelectionContainerGO.transform);
         RectTransform shopSelectionContentRect = shopSelectionContentGO.GetComponent<RectTransform>();
-        shopSelectionContentRect.sizeDelta = new Vector2(400, 400);
+        shopSelectionContentRect.sizeDelta = new Vector2(430, 600);
         shopSelectionContentRect.anchorMin = new Vector2(0, 0);
         shopSelectionContentRect.anchorMax = new Vector2(0, 1);
         shopSelectionContentRect.pivot = new Vector2(0, 1);
@@ -330,11 +421,11 @@ public class ShopUISetup : MonoBehaviour
 
         // Add Grid Layout Group to shop selection content
         GridLayoutGroup shopSelectionGridGroup = shopSelectionContentGO.AddComponent<GridLayoutGroup>();
-        shopSelectionGridGroup.cellSize = new Vector2(200, 100);
+        shopSelectionGridGroup.cellSize = new Vector2(400, 150); // Updated cell size
         shopSelectionGridGroup.spacing = new Vector2(10, 10);
         shopSelectionGridGroup.padding = new RectOffset(10, 10, 10, 10);
         shopSelectionGridGroup.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-        shopSelectionGridGroup.constraintCount = 1; // 1 column for 200x100 buttons
+        shopSelectionGridGroup.constraintCount = 1;
 
         // Add Content Size Fitter to shop selection content
         ContentSizeFitter shopSelectionSizeFitter = shopSelectionContentGO.AddComponent<ContentSizeFitter>();
@@ -343,18 +434,23 @@ public class ShopUISetup : MonoBehaviour
         // Update shopSelectionContainer to point to content
         shopSelectionContainer = shopSelectionContentGO.transform;
 
-        // Create Shop Items Panel (move higher and more to the right)
+        // Create Shop Items Panel (position to the right of shop selection panel)
         GameObject shopItemsPanelGO = CreateUIElement("ShopItemsPanel", mainPanel.transform);
         RectTransform shopItemsPanelRect = shopItemsPanelGO.GetComponent<RectTransform>();
-        shopItemsPanelRect.anchoredPosition = new Vector2(0, 60); // Move up and right, clear gap from ShopSelectionPanel
-        shopItemsPanelRect.sizeDelta = new Vector2(1100, 600); // Slightly wider
+        shopItemsPanelRect.anchorMin = new Vector2(0, 1);
+        shopItemsPanelRect.anchorMax = new Vector2(0, 1);
+        shopItemsPanelRect.pivot = new Vector2(0, 1);
+        // Position below the buttons, aligned with Shop Selection Panel: buttons are at y=-20, button height=80, spacing=50
+        // Shop Selection Panel is at y=-150, so align Shop Items Panel at the same y position
+        shopItemsPanelRect.anchoredPosition = new Vector2(460, -150); // Same y as Shop Selection Panel, x=460 (430 + 30 margin)
+        shopItemsPanelRect.sizeDelta = new Vector2(800, 600); // Fixed size, aligned with Shop Selection Panel height
         shopItemsPanel = shopItemsPanelGO;
 
         // Create Shop Items Container with Grid Layout
         GameObject containerGO = CreateUIElement("ShopItemsContainer", shopItemsPanelGO.transform);
         RectTransform containerRect = containerGO.GetComponent<RectTransform>();
         containerRect.anchoredPosition = new Vector2(0, 0);
-        containerRect.sizeDelta = new Vector2(1000, 400);
+        containerRect.sizeDelta = new Vector2(800, 600);
         shopItemContainer = containerGO.transform;
 
         // Add ScrollRect to container
@@ -364,7 +460,7 @@ public class ShopUISetup : MonoBehaviour
         // Create Content for ScrollRect
         GameObject contentGO = CreateUIElement("Content", containerGO.transform);
         RectTransform contentRect = contentGO.GetComponent<RectTransform>();
-        contentRect.sizeDelta = new Vector2(1000, 400);
+        contentRect.sizeDelta = new Vector2(800, 600);
         contentRect.anchorMin = new Vector2(0, 1);
         contentRect.anchorMax = new Vector2(1, 1);
         contentRect.pivot = new Vector2(0.5f, 1);
@@ -380,11 +476,11 @@ public class ShopUISetup : MonoBehaviour
 
         // Add Grid Layout Group to content
         GridLayoutGroup layoutGroup = contentGO.AddComponent<GridLayoutGroup>();
-        layoutGroup.cellSize = new Vector2(200, 100);
-        layoutGroup.spacing = new Vector2(20, 20);
-        layoutGroup.padding = new RectOffset(20, 20, 20, 20);
+        layoutGroup.cellSize = new Vector2(400, 150); // Updated to match new button size
+        layoutGroup.spacing = new Vector2(15, 15);
+        layoutGroup.padding = new RectOffset(15, 15, 15, 15);
         layoutGroup.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-        layoutGroup.constraintCount = 4; // 4 columns for 200x200 buttons in smaller container
+        layoutGroup.constraintCount = 3; // Reduced to 3 columns for 400x150 buttons
 
         // Add Content Size Fitter
         ContentSizeFitter sizeFitter = contentGO.AddComponent<ContentSizeFitter>();
@@ -399,19 +495,35 @@ public class ShopUISetup : MonoBehaviour
         // Create Shop Item Prefab
         CreateShopItemPrefab();
 
-        // Create Status Text (move higher)
+        // Create Scene Title "Shops" at top-right corner
+        GameObject sceneTitleGO = CreateText("SceneTitle", "Shops", mainPanel.transform, 48);
+        RectTransform sceneTitleRect = sceneTitleGO.GetComponent<RectTransform>();
+        sceneTitleRect.anchorMin = new Vector2(1, 1);
+        sceneTitleRect.anchorMax = new Vector2(1, 1);
+        sceneTitleRect.pivot = new Vector2(1, 1);
+        sceneTitleRect.anchoredPosition = new Vector2(-20, -20); // Top-right corner with margin
+        sceneTitleRect.sizeDelta = new Vector2(300, 80);
+        TextMeshProUGUI sceneTitleText = sceneTitleGO.GetComponent<TextMeshProUGUI>();
+        sceneTitleText.color = Color.white;
+        sceneTitleText.alignment = TextAlignmentOptions.TopRight;
+        sceneTitleText.fontStyle = FontStyles.Bold;
+
+        // Create Status Text (position at bottom center)
         GameObject statusGO = CreateText("StatusText", "", mainPanel.transform, 24);
         RectTransform statusRect = statusGO.GetComponent<RectTransform>();
-        statusRect.anchoredPosition = new Vector2(0, -250); // Move up
-        statusRect.sizeDelta = new Vector2(800, 60);
+        statusRect.anchorMin = new Vector2(0, 0);
+        statusRect.anchorMax = new Vector2(1, 0.1f); // Bottom 10% of screen
+        statusRect.offsetMin = new Vector2(20, 10);
+        statusRect.offsetMax = new Vector2(-20, -10);
         statusText = statusGO.GetComponent<TextMeshProUGUI>();
         statusText.color = Color.yellow;
+        statusText.alignment = TextAlignmentOptions.Center;
 
-        // Create Loading Panel (move higher)
+        // Create Loading Panel (center of screen)
         GameObject loadingGO = CreateUIElement("LoadingPanel", mainPanel.transform);
         RectTransform loadingRect = loadingGO.GetComponent<RectTransform>();
         loadingRect.sizeDelta = new Vector2(400, 200);
-        loadingRect.anchoredPosition = new Vector2(0, 180); // Move up
+        loadingRect.anchoredPosition = new Vector2(0, 0); // Center of screen
         loadingPanel = loadingGO;
 
         // Add background to loading panel
@@ -426,14 +538,20 @@ public class ShopUISetup : MonoBehaviour
 
         // Hide loading panel initially
         loadingPanel.SetActive(false);
+
+        // Tạo dummy data nếu ở Editor mode
+        if (showDummyData && !Application.isPlaying)
+        {
+            LoadDummyData();
+        }
     }
 
     private void CreateShopItemPrefab()
     {
-        // Create shop item prefab as a 200x100 button
+        // Create shop item prefab as a 400x150 button
         GameObject itemPrefab = CreateUIElement("ShopItemPrefab", null);
         RectTransform itemRect = itemPrefab.GetComponent<RectTransform>();
-        itemRect.sizeDelta = new Vector2(200, 100);
+        itemRect.sizeDelta = new Vector2(400, 150);
 
         // Add background image
         Image itemBg = itemPrefab.AddComponent<Image>();
@@ -457,16 +575,16 @@ public class ShopUISetup : MonoBehaviour
         itemLayout.childForceExpandHeight = false;
 
         // Create Item Name
-        GameObject nameGO = CreateText("ItemName", "Item Name", itemPrefab.transform, 16);
+        GameObject nameGO = CreateText("ItemName", "Item Name", itemPrefab.transform, 32);
         RectTransform nameRect = nameGO.GetComponent<RectTransform>();
-        nameRect.sizeDelta = new Vector2(180, 30);
+        nameRect.sizeDelta = new Vector2(380, 60); // Increased size for larger button
         TextMeshProUGUI nameText = nameGO.GetComponent<TextMeshProUGUI>();
         nameText.alignment = TextAlignmentOptions.Center;
 
         // Create Price Text
-        GameObject priceGO = CreateText("PriceText", "$0", itemPrefab.transform, 18);
+        GameObject priceGO = CreateText("PriceText", "$0", itemPrefab.transform, 36);
         RectTransform priceTextRect = priceGO.GetComponent<RectTransform>();
-        priceTextRect.sizeDelta = new Vector2(180, 25);
+        priceTextRect.sizeDelta = new Vector2(380, 50); // Increased size for larger button
         TextMeshProUGUI priceText = priceGO.GetComponent<TextMeshProUGUI>();
         priceText.color = new Color(1f, 0.8f, 0.2f, 1f);
         priceText.alignment = TextAlignmentOptions.Center;
@@ -478,10 +596,10 @@ public class ShopUISetup : MonoBehaviour
 
     private void CreateShopSelectionPrefab()
     {
-        // Create shop selection prefab as a 200x100 button
+        // Create shop selection prefab as a 400x150 button
         GameObject selectionPrefab = CreateUIElement("ShopSelectionPrefab", null);
         RectTransform selectionRect = selectionPrefab.GetComponent<RectTransform>();
-        selectionRect.sizeDelta = new Vector2(200, 100);
+        selectionRect.sizeDelta = new Vector2(400, 150);
 
         // Add background image
         Image selectionBg = selectionPrefab.AddComponent<Image>();
@@ -495,23 +613,23 @@ public class ShopUISetup : MonoBehaviour
         buttonColors.pressedColor = new Color(0.2f, 0.2f, 0.3f, 0.8f);
         selectionButton.colors = buttonColors;
 
-        // Create Shop Name (Top Left)
-        GameObject shopNameGO = CreateText("ShopName", "Shop", selectionPrefab.transform, 20);
-        RectTransform shopNameRect = shopNameGO.GetComponent<RectTransform>();
-        shopNameRect.anchorMin = new Vector2(0, 1);
-        shopNameRect.anchorMax = new Vector2(1, 1);
-        shopNameRect.anchoredPosition = new Vector2(0, -10);
-        shopNameRect.sizeDelta = new Vector2(-10, 25);
-        TextMeshProUGUI shopNameText = shopNameGO.GetComponent<TextMeshProUGUI>();
-        shopNameText.alignment = TextAlignmentOptions.TopLeft;
+        // Add Vertical Layout Group for padding and alignment
+        VerticalLayoutGroup layoutGroup = selectionPrefab.AddComponent<VerticalLayoutGroup>();
+        layoutGroup.padding = new RectOffset(10, 10, 10, 10);
+        layoutGroup.spacing = 10;
+        layoutGroup.childAlignment = TextAnchor.MiddleCenter;
+        layoutGroup.childControlWidth = true;
+        layoutGroup.childControlHeight = true;
+        layoutGroup.childForceExpandWidth = true;
+        layoutGroup.childForceExpandHeight = true;
 
-        // Create Items Count Text (Bottom) with Label
-        GameObject itemsCountGO = CreateText("ItemsCountText", "Items: 0", selectionPrefab.transform, 16);
-        RectTransform itemsCountTextRect = itemsCountGO.GetComponent<RectTransform>();
-        itemsCountTextRect.anchorMin = new Vector2(0, 0);
-        itemsCountTextRect.anchorMax = new Vector2(1, 0);
-        itemsCountTextRect.anchoredPosition = new Vector2(0, 10);
-        itemsCountTextRect.sizeDelta = new Vector2(-10, 20);
+        // Create Shop Name
+        GameObject shopNameGO = CreateText("ShopName", "Shop", selectionPrefab.transform, 30); // Font size 30
+        TextMeshProUGUI shopNameText = shopNameGO.GetComponent<TextMeshProUGUI>();
+        shopNameText.alignment = TextAlignmentOptions.Center;
+
+        // Create Items Count Text
+        GameObject itemsCountGO = CreateText("ItemsCountText", "Items: 0", selectionPrefab.transform, 30); // Font size 30
         TextMeshProUGUI itemsCountText = itemsCountGO.GetComponent<TextMeshProUGUI>();
         itemsCountText.color = new Color(0.6f, 0.8f, 1f, 1f);
         itemsCountText.alignment = TextAlignmentOptions.Center;
@@ -532,6 +650,11 @@ public class ShopUISetup : MonoBehaviour
         if (buyItemButton != null)
             buyItemButton.onClick.AddListener(OnBuyItemClick);
 
+        // Find and setup My Item button
+        Button myItemBtn = GameObject.Find("MyItemButton")?.GetComponent<Button>();
+        if (myItemBtn != null)
+            myItemBtn.onClick.AddListener(OnMyItemClick);
+
         // Find and setup back to shop selection button
         Button backToShopSelectionBtn = GameObject.Find("BackToShopSelectionButton")?.GetComponent<Button>();
         if (backToShopSelectionBtn != null)
@@ -540,19 +663,19 @@ public class ShopUISetup : MonoBehaviour
 
     public void OnBuyItemClick()
     {
-        if (shopManager == null)
+        if (ShopManager.Instance == null)
         {
             ShowStatus("ShopManager not found!");
             return;
         }
 
-        if (string.IsNullOrEmpty(shopManager.itemProfileIdForEditor))
+        if (string.IsNullOrEmpty(ShopManager.Instance.itemProfileIdForEditor))
         {
             ShowStatus("Please select an item first!");
             return;
         }
 
-        if (string.IsNullOrEmpty(shopManager.selectedShopIdForEditor))
+        if (string.IsNullOrEmpty(ShopManager.Instance.selectedShopIdForEditor))
         {
             ShowStatus("Please select a shop first!");
             return;
@@ -561,39 +684,15 @@ public class ShopUISetup : MonoBehaviour
         // Use default number of 1 for UI button (same as Inspector default)
         int number = 1;
         
-        ShowStatus($"Buying item {shopManager.itemProfileIdForEditor} from shop {shopManager.selectedShopIdForEditor}...");
-        shopManager.BuyItem(shopManager.selectedShopIdForEditor, shopManager.itemProfileIdForEditor, number);
+        ShowStatus($"Buying item {ShopManager.Instance.itemProfileIdForEditor} from shop {ShopManager.Instance.selectedShopIdForEditor}...");
+        ShopManager.Instance.BuyItem(ShopManager.Instance.selectedShopIdForEditor, ShopManager.Instance.itemProfileIdForEditor, number);
     }
 
     private void LoadShopData()
     {
-        if (shopManager == null)
-        {
-            Debug.LogError("[ShopUISetup] ShopManager is null!");
-            ShowStatus("ShopManager not found!");
-            return;
-        }
-
-        if (apiManager == null)
-        {
-            Debug.LogError("[ShopUISetup] APIManager is null!");
-            ShowStatus("APIManager not found!");
-            return;
-        }
-
-        if (!apiManager.HasValidToken())
-        {
-            Debug.LogWarning("[ShopUISetup] No valid token available!");
-            ShowStatus("No valid authentication token!");
-            return;
-        }
-
         ShowLoading(true);
-        ShowStatus("Loading shops...");
-        
-        // Subscribe to shop list changes
-        shopManager.OnShopListChanged += OnShopListLoaded;
-        shopManager.FetchShopList();
+        ShowStatus("Loading shop list...");
+        ShopManager.Instance.GetShopList(OnShopListLoaded);
     }
 
     private void OnShopListLoaded(List<ShopData> shops)
@@ -657,11 +756,8 @@ public class ShopUISetup : MonoBehaviour
     {
         selectedShop = shop;
         ShowLoading(true);
-        ShowStatus($"Loading items from {shop.name}...");
-        
-        // Subscribe to shop items changes
-        shopManager.OnShopItemsChanged += OnShopDataLoaded;
-        shopManager.FetchShopItems(shop.id);
+        ShowStatus($"Loading items for {shop.name}...");
+        ShopManager.Instance.GetShopItems(shop.id, OnShopDataLoaded);
     }
 
     private void OnShopDataLoaded(List<ItemProfileData> shopItems)
@@ -679,36 +775,37 @@ public class ShopUISetup : MonoBehaviour
         }
     }
 
-    private void PopulateShopItems(List<ItemProfileData> shopItems)
+    private void PopulateShopItems(List<ItemProfileData> items)
     {
-        // Clear existing items
         ClearShopItems();
 
-        if (shopItemContainer == null || shopItemPrefab == null) return;
-
-        foreach (var item in shopItems)
+        if (items == null || items.Count == 0)
         {
-            GameObject itemGO = Instantiate(shopItemPrefab, shopItemContainer);
-            itemGO.SetActive(true);
+            ShowStatus("No items found");
+            return;
+        }
 
-            // Set item data
-            TextMeshProUGUI nameText = itemGO.transform.Find("ItemName")?.GetComponent<TextMeshProUGUI>();
-            if (nameText != null)
-                nameText.text = item.item_profile?.name ?? "Unknown Item";
+        foreach (var item in items)
+        {
+            GameObject itemObj = Instantiate(shopItemPrefab, shopItemContainer);
+            itemObj.SetActive(true);
 
-            TextMeshProUGUI priceText = itemGO.transform.Find("PriceText")?.GetComponent<TextMeshProUGUI>();
-            if (priceText != null)
-                priceText.text = $"${item.price_current}";
+            // Set item name
+            TextMeshProUGUI nameText = itemObj.transform.Find("ItemName").GetComponent<TextMeshProUGUI>();
+            nameText.text = item.item_profile.name;
 
-            // Setup item button click event - update ItemProfileId instead of buying
-            Button itemButton = itemGO.GetComponent<Button>();
+            // Set item price
+            TextMeshProUGUI priceText = itemObj.transform.Find("PriceText").GetComponent<TextMeshProUGUI>();
+            priceText.text = $"${item.price_current}";
+
+            // Add click handler
+            Button itemButton = itemObj.GetComponent<Button>();
             if (itemButton != null)
             {
-                itemButton.onClick.RemoveAllListeners();
                 itemButton.onClick.AddListener(() => OnItemSelected(item));
             }
 
-            this.shopItems.Add(itemGO);
+            shopItems.Add(itemObj);
         }
     }
 
@@ -724,10 +821,10 @@ public class ShopUISetup : MonoBehaviour
 
     private void OnItemSelected(ItemProfileData item)
     {
-        if (shopManager != null)
+        if (ShopManager.Instance != null)
         {
             // Update ItemProfileId in ShopManager for inspector use
-            shopManager.UpdateItemProfileId(item.shop_id, item.item_profile_id);
+            ShopManager.Instance.UpdateItemProfileId(item.shop_id, item.item_profile_id);
             ShowStatus($"Selected: {item.item_profile?.name} (ID: {item.item_profile_id})");
         }
         else
@@ -738,22 +835,21 @@ public class ShopUISetup : MonoBehaviour
 
     public void OnRefreshClick()
     {
-        // If we're in shop items view, refresh items
-        if (selectedShop != null && shopItemsPanel != null && shopItemsPanel.activeSelf)
-        {
-            ShowLoading(true);
-            shopManager.FetchShopItems(selectedShop.id);
-        }
-        else
-        {
-            // Otherwise refresh shop list
-            LoadShopData();
-        }
+        ShowLoading(true);
+        ShowStatus("Refreshing shops...");
+        LoadShopData();
     }
 
     public void OnBackToMainMenuClick()
     {
-        SceneController.LoadScene(mainMenuSceneName);
+        if (!string.IsNullOrEmpty(mainMenuSceneName))
+        {
+            SceneController.LoadScene(mainMenuSceneName);
+        }
+        else
+        {
+            Debug.LogWarning("[ShopUISetup] Main menu scene name not set");
+        }
     }
 
     public void OnBackToShopSelectionClick()
@@ -817,6 +913,20 @@ public class ShopUISetup : MonoBehaviour
     public void HideLoadingTest()
     {
         ShowLoading(false);
+    }
+
+    [ContextMenu("Load Dummy Data")]
+    public void TestLoadDummyData()
+    {
+        LoadDummyData();
+    }
+
+    [ContextMenu("Clear Dummy Data")]
+    public void TestClearDummyData()
+    {
+        ClearShopSelectionItems();
+        ClearShopItems();
+        ShowStatus("Dummy data cleared");
     }
 
     GameObject CreateUIElement(string name, Transform parent)
@@ -896,15 +1006,187 @@ public class ShopUISetup : MonoBehaviour
     private void OnDestroy()
     {
         // Cleanup event subscriptions
-        if (shopManager != null)
+        if (ShopManager.Instance != null)
         {
-            shopManager.OnShopListChanged -= OnShopListLoaded;
-            shopManager.OnShopItemsChanged -= OnShopDataLoaded;
+            ShopManager.Instance.OnShopListChanged -= OnShopListLoaded;
+            ShopManager.Instance.OnShopItemsChanged -= OnShopDataLoaded;
         }
         
-        if (apiManager != null)
+        if (APIManager.Instance != null)
         {
-            apiManager.OnAuthenticationSuccess -= OnAuthenticationSuccess;
+            APIManager.Instance.OnAuthenticationSuccess -= OnAuthenticationSuccess;
         }
+    }
+
+    public void OnMyItemClick()
+    {
+        if (!string.IsNullOrEmpty(myItemSceneName))
+        {
+            SceneController.LoadScene(myItemSceneName);
+        }
+        else
+        {
+            Debug.LogWarning("[ShopUISetup] My Item scene name not set");
+        }
+    }
+
+    private void CreateDummyData()
+    {
+        // OLD CreateDummyData method removed - replaced with LoadDummyData
+    }
+
+    [ContextMenu("Create Dummy Data")]
+    public void CreateDummyDataFromMenu()
+    {
+        LoadDummyData();
+    }
+
+    [ContextMenu("Clear Dummy Data")]
+    public void ClearDummyData()
+    {
+        ClearShopSelectionItems();
+        ClearShopItems();
+        ShowStatus("Dummy data cleared");
+    }
+
+    // Public methods for Inspector buttons
+    public void ShowDummyDataButton()
+    {
+        if (Application.isEditor)
+        {
+            LoadDummyData();
+        }
+        else
+        {
+            Debug.LogWarning("[ShopUISetup] Dummy data only available in Editor mode");
+        }
+    }
+
+    public void DeleteDummyDataButton()
+    {
+        ClearShopSelectionItems();
+        ClearShopItems();
+        ShowStatus("Dummy data deleted");
+    }
+
+    public void ToggleDummyDataButton()
+    {
+        showDummyData = !showDummyData;
+        if (showDummyData && Application.isEditor)
+        {
+            LoadDummyData();
+        }
+        else
+        {
+            ClearShopSelectionItems();
+            ClearShopItems();
+            ShowStatus($"Dummy data {(showDummyData ? "enabled" : "disabled")}");
+        }
+    }
+
+    private void LoadDummyData()
+    {
+        // Chỉ load dummy data trong editor mode
+        if (!Application.isEditor || !showDummyData) return;
+
+        // Tạo dummy shop data
+        List<ShopData> dummyShops = new List<ShopData>();
+        string[] shopNames = {
+            "Weapon Shop",
+            "Armor Shop", 
+            "Potion Shop",
+            "Magic Shop",
+            "Food Shop",
+            "Tool Shop",
+            "Jewelry Shop",
+            "Book Shop",
+            "Pet Shop",
+            "Garden Shop"
+        };
+        
+        string[] shopDescriptions = {
+            "Best weapons in town",
+            "Protection for heroes",
+            "Healing and magic",
+            "Spells and scrolls", 
+            "Delicious meals",
+            "Crafting materials",
+            "Precious gems and rings",
+            "Ancient knowledge",
+            "Loyal companions",
+            "Beautiful plants"
+        };
+
+        for (int i = 0; i < dummyShopCount && i < shopNames.Length; i++)
+        {
+            ShopData dummyShop = new ShopData
+            {
+                id = $"dummy_shop_{i}",
+                name = shopNames[i],
+                description = shopDescriptions[i]
+            };
+            dummyShops.Add(dummyShop);
+        }
+
+        // Tạo dummy item data
+        List<ItemProfileData> dummyItems = new List<ItemProfileData>();
+        string[] itemNames = {
+            "Iron Sword",
+            "Steel Armor",
+            "Health Potion",
+            "Magic Staff",
+            "Golden Shield",
+            "Mana Potion",
+            "Dragon Scale",
+            "Fire Scroll",
+            "Leather Boots",
+            "Crystal Ring",
+            "Poison Dagger",
+            "Holy Water",
+            "Thunder Bow",
+            "Ice Wand",
+            "Phoenix Feather"
+        };
+        
+        string[] itemDescriptions = {
+            "A sharp iron sword",
+            "Strong steel armor",
+            "Restores 50 HP",
+            "Powerful magic weapon",
+            "Legendary shield",
+            "Restores 50 MP",
+            "Rare crafting material",
+            "Cast fireball spell",
+            "Lightweight boots",
+            "Magical ring",
+            "Venomous weapon",
+            "Blessed healing item",
+            "Lightning-fast bow",
+            "Freezes enemies",
+            "Rare magical item"
+        };
+
+        for (int i = 0; i < dummyItemCount && i < itemNames.Length; i++)
+        {
+            ItemProfileData dummyItem = new ItemProfileData
+            {
+                id = $"dummy_item_{i}",
+                item_profile = new ItemProfile 
+                { 
+                    name = itemNames[i], 
+                    description = itemDescriptions[i] 
+                },
+                price_current = Random.Range(50, 1000)
+            };
+            dummyItems.Add(dummyItem);
+        }
+
+        // Populate shop selection
+        PopulateShopSelection(dummyShops);
+        
+        // Populate shop items (simulate selecting first shop)
+        PopulateShopItems(dummyItems);
+        
+        ShowStatus($"Loaded {dummyShops.Count} dummy shops, {dummyItems.Count} dummy items (Editor Mode)");
     }
 } 

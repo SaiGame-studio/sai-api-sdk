@@ -7,5 +7,5 @@ public class ItemProfileListResponse
     public string status;
     public string message;
     public string message_code;
-    public List<ItemProfileSimple> data;
+    public List<ItemProfileData> data;
 } 

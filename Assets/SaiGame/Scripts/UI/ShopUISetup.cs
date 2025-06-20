@@ -12,7 +12,6 @@ public class ShopUISetup : MonoBehaviour
 
     [Header("APIManager Integration")]
     public APIManager apiManager;
-    public ShopManager shopManager;
 
     [Header("UI References (Auto-assigned)")]
     [SerializeField] public Transform shopItemContainer;
@@ -71,8 +70,11 @@ public class ShopUISetup : MonoBehaviour
 
     void Start()
     {
-        // Tự động tìm và liên kết APIManager và ShopManager một lần duy nhất
-        AutoLinkManagers();
+        // Tự động tìm và liên kết APIManager
+        if (apiManager == null)
+        {
+            apiManager = APIManager.Instance;
+        }
 
         if (autoSetup)
         {
@@ -94,42 +96,13 @@ public class ShopUISetup : MonoBehaviour
         }
     }
 
-    private void AutoLinkManagers()
-    {
-        // Tự động tìm và liên kết APIManager
-        if (apiManager == null)
-        {
-            apiManager = FindFirstObjectByType<APIManager>();
-            if (apiManager == null)
-            {
-                Debug.LogWarning("[ShopUISetup] ✗ APIManager not found in scene");
-            }
-        }
-
-        // Tự động tìm và liên kết ShopManager
-        if (shopManager == null)
-        {
-            shopManager = FindFirstObjectByType<ShopManager>();
-            if (shopManager == null)
-            {
-                Debug.LogWarning("[ShopUISetup] ✗ ShopManager not found in scene");
-            }
-        }
-    }
-
     private IEnumerator DelayedLoadShopData()
     {
         // Đợi một frame
         yield return null;
         
-        // Kiểm tra lại APIManager và ShopManager
-        AutoLinkManagers();
-        
-        // Đợi thêm một frame nữa để đảm bảo managers đã sẵn sàng
-        yield return null;
-        
         // Kiểm tra xem có token hợp lệ không
-        if (apiManager != null && apiManager.HasValidToken())
+        if (APIManager.Instance != null && APIManager.Instance.HasValidToken())
         {
             LoadShopData();
         }
@@ -149,18 +122,18 @@ public class ShopUISetup : MonoBehaviour
             }
             
             // Nếu chưa có token, đợi authentication
-            if (apiManager != null)
+            if (APIManager.Instance != null)
             {
-                apiManager.OnAuthenticationSuccess += OnAuthenticationSuccess;
+                APIManager.Instance.OnAuthenticationSuccess += OnAuthenticationSuccess;
             }
         }
     }
 
     private void OnAuthenticationSuccess()
     {
-        if (apiManager != null)
+        if (APIManager.Instance != null)
         {
-            apiManager.OnAuthenticationSuccess -= OnAuthenticationSuccess;
+            APIManager.Instance.OnAuthenticationSuccess -= OnAuthenticationSuccess;
         }
         
         // Clear dummy data and load real data
@@ -690,19 +663,19 @@ public class ShopUISetup : MonoBehaviour
 
     public void OnBuyItemClick()
     {
-        if (shopManager == null)
+        if (ShopManager.Instance == null)
         {
             ShowStatus("ShopManager not found!");
             return;
         }
 
-        if (string.IsNullOrEmpty(shopManager.itemProfileIdForEditor))
+        if (string.IsNullOrEmpty(ShopManager.Instance.itemProfileIdForEditor))
         {
             ShowStatus("Please select an item first!");
             return;
         }
 
-        if (string.IsNullOrEmpty(shopManager.selectedShopIdForEditor))
+        if (string.IsNullOrEmpty(ShopManager.Instance.selectedShopIdForEditor))
         {
             ShowStatus("Please select a shop first!");
             return;
@@ -711,39 +684,15 @@ public class ShopUISetup : MonoBehaviour
         // Use default number of 1 for UI button (same as Inspector default)
         int number = 1;
         
-        ShowStatus($"Buying item {shopManager.itemProfileIdForEditor} from shop {shopManager.selectedShopIdForEditor}...");
-        shopManager.BuyItem(shopManager.selectedShopIdForEditor, shopManager.itemProfileIdForEditor, number);
+        ShowStatus($"Buying item {ShopManager.Instance.itemProfileIdForEditor} from shop {ShopManager.Instance.selectedShopIdForEditor}...");
+        ShopManager.Instance.BuyItem(ShopManager.Instance.selectedShopIdForEditor, ShopManager.Instance.itemProfileIdForEditor, number);
     }
 
     private void LoadShopData()
     {
-        if (shopManager == null)
-        {
-            Debug.LogError("[ShopUISetup] ShopManager is null!");
-            ShowStatus("ShopManager not found!");
-            return;
-        }
-
-        if (apiManager == null)
-        {
-            Debug.LogError("[ShopUISetup] APIManager is null!");
-            ShowStatus("APIManager not found!");
-            return;
-        }
-
-        if (!apiManager.HasValidToken())
-        {
-            Debug.LogWarning("[ShopUISetup] No valid token available!");
-            ShowStatus("No valid authentication token!");
-            return;
-        }
-
         ShowLoading(true);
-        ShowStatus("Loading shops...");
-        
-        // Subscribe to shop list changes
-        shopManager.OnShopListChanged += OnShopListLoaded;
-        shopManager.FetchShopList();
+        ShowStatus("Loading shop list...");
+        ShopManager.Instance.GetShopList(OnShopListLoaded);
     }
 
     private void OnShopListLoaded(List<ShopData> shops)
@@ -807,11 +756,8 @@ public class ShopUISetup : MonoBehaviour
     {
         selectedShop = shop;
         ShowLoading(true);
-        ShowStatus($"Loading items from {shop.name}...");
-        
-        // Subscribe to shop items changes
-        shopManager.OnShopItemsChanged += OnShopDataLoaded;
-        shopManager.FetchShopItems(shop.id);
+        ShowStatus($"Loading items for {shop.name}...");
+        ShopManager.Instance.GetShopItems(shop.id, OnShopDataLoaded);
     }
 
     private void OnShopDataLoaded(List<ItemProfileData> shopItems)
@@ -875,10 +821,10 @@ public class ShopUISetup : MonoBehaviour
 
     private void OnItemSelected(ItemProfileData item)
     {
-        if (shopManager != null)
+        if (ShopManager.Instance != null)
         {
             // Update ItemProfileId in ShopManager for inspector use
-            shopManager.UpdateItemProfileId(item.shop_id, item.item_profile_id);
+            ShopManager.Instance.UpdateItemProfileId(item.shop_id, item.item_profile_id);
             ShowStatus($"Selected: {item.item_profile?.name} (ID: {item.item_profile_id})");
         }
         else
@@ -889,10 +835,10 @@ public class ShopUISetup : MonoBehaviour
 
     public void OnRefreshClick()
     {
-        if (shopManager != null)
+        if (ShopManager.Instance != null)
         {
             ShowStatus("Refreshing shops...");
-            shopManager.FetchShopList();
+            ShopManager.Instance.GetShopList();
         }
         else
         {
@@ -1066,15 +1012,15 @@ public class ShopUISetup : MonoBehaviour
     private void OnDestroy()
     {
         // Cleanup event subscriptions
-        if (shopManager != null)
+        if (ShopManager.Instance != null)
         {
-            shopManager.OnShopListChanged -= OnShopListLoaded;
-            shopManager.OnShopItemsChanged -= OnShopDataLoaded;
+            ShopManager.Instance.OnShopListChanged -= OnShopListLoaded;
+            ShopManager.Instance.OnShopItemsChanged -= OnShopDataLoaded;
         }
         
-        if (apiManager != null)
+        if (APIManager.Instance != null)
         {
-            apiManager.OnAuthenticationSuccess -= OnAuthenticationSuccess;
+            APIManager.Instance.OnAuthenticationSuccess -= OnAuthenticationSuccess;
         }
     }
 

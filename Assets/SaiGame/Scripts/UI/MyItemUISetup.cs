@@ -12,7 +12,6 @@ public class MyItemUISetup : MonoBehaviour
 
     [Header("APIManager Integration")]
     public APIManager apiManager;
-    public PlayerItemManager playerItemManager;
 
     [Header("UI References (Auto-assigned)")]
     [SerializeField] public Transform itemContainer;
@@ -77,8 +76,11 @@ public class MyItemUISetup : MonoBehaviour
             showDummyData = false; // Disable dummy data in play mode
         }
 
-        // Tự động tìm và liên kết APIManager và PlayerItemManager một lần duy nhất
-        AutoLinkManagers();
+        // Tự động tìm và liên kết APIManager một lần duy nhất
+        if (apiManager == null)
+        {
+            apiManager = APIManager.Instance;
+        }
 
         if (autoSetup)
         {
@@ -91,42 +93,13 @@ public class MyItemUISetup : MonoBehaviour
         StartCoroutine(DelayedLoadPlayerItems());
     }
 
-    private void AutoLinkManagers()
-    {
-        // Tự động tìm và liên kết APIManager
-        if (apiManager == null)
-        {
-            apiManager = FindFirstObjectByType<APIManager>();
-            if (apiManager == null)
-            {
-                Debug.LogWarning("[MyItemUISetup] ✗ APIManager not found in scene");
-            }
-        }
-
-        // Tự động tìm và liên kết PlayerItemManager
-        if (playerItemManager == null)
-        {
-            playerItemManager = FindFirstObjectByType<PlayerItemManager>();
-            if (playerItemManager == null)
-            {
-                Debug.LogWarning("[MyItemUISetup] ✗ PlayerItemManager not found in scene");
-            }
-        }
-    }
-
     private IEnumerator DelayedLoadPlayerItems()
     {
         // Đợi một frame
         yield return null;
         
-        // Kiểm tra lại APIManager và PlayerItemManager
-        AutoLinkManagers();
-        
-        // Đợi thêm một frame nữa để đảm bảo managers đã sẵn sàng
-        yield return null;
-        
         // Kiểm tra xem có token hợp lệ không
-        if (apiManager != null && apiManager.HasValidToken())
+        if (APIManager.Instance != null && APIManager.Instance.HasValidToken())
         {
             LoadPlayerItems();
         }
@@ -146,18 +119,18 @@ public class MyItemUISetup : MonoBehaviour
             }
             
             // Nếu chưa có token, đợi authentication
-            if (apiManager != null)
+            if (APIManager.Instance != null)
             {
-                apiManager.OnAuthenticationSuccess += OnAuthenticationSuccess;
+                APIManager.Instance.OnAuthenticationSuccess += OnAuthenticationSuccess;
             }
         }
     }
 
     private void OnAuthenticationSuccess()
     {
-        if (apiManager != null)
+        if (APIManager.Instance != null)
         {
-            apiManager.OnAuthenticationSuccess -= OnAuthenticationSuccess;
+            APIManager.Instance.OnAuthenticationSuccess -= OnAuthenticationSuccess;
         }
         
         // Clear dummy data and load real data
@@ -490,22 +463,14 @@ public class MyItemUISetup : MonoBehaviour
         Button shopsButton = GameObject.Find("ShopsButton")?.GetComponent<Button>();
         if (shopsButton != null)
             shopsButton.onClick.AddListener(OnShopsClick);
-
-        if (playerItemManager != null)
-            playerItemManager.OnPlayerItemsChanged += OnPlayerItemsLoaded;
     }
 
     private void LoadPlayerItems()
     {
-        if (playerItemManager == null)
-        {
-            ShowStatus("PlayerItemManager not found");
-            return;
-        }
-
         ShowLoading(true);
         ShowStatus("Loading player items...");
-        playerItemManager.FetchPlayerItems();
+
+        PlayerItemManager.Instance.GetPlayerItems(OnPlayerItemsLoaded);
     }
 
     private void OnPlayerItemsLoaded(List<InventoryItem> items)
@@ -697,27 +662,6 @@ public class MyItemUISetup : MonoBehaviour
         rect.anchorMax = Vector2.one;
         rect.offsetMin = Vector2.zero;
         rect.offsetMax = Vector2.zero;
-    }
-
-    [ContextMenu("Retry Load Player Items")]
-    public void RetryLoadPlayerItems()
-    {
-        LoadPlayerItems();
-    }
-
-    [ContextMenu("Force Load Player Items")]
-    public void ForceLoadPlayerItems()
-    {
-        if (apiManager != null)
-        {
-            LoadPlayerItems();
-        }
-    }
-
-    private void OnDestroy()
-    {
-        if (playerItemManager != null)
-            playerItemManager.OnPlayerItemsChanged -= OnPlayerItemsLoaded;
     }
 
     private void LoadDummyData()

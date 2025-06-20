@@ -10,7 +10,7 @@ public class PlayerItemManagerEditor : Editor
         PlayerItemManager manager = (PlayerItemManager)target;
         if (GUILayout.Button("Refresh Items"))
         {
-            manager.FetchPlayerItems();
+            manager.GetPlayerItems(null);
         }
     }
 } 

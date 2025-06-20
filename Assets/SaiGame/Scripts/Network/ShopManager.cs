@@ -1,10 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using SaiGame.Enums;
-using UnityEngine.Playables;
+using System;
 
-public class ShopManager : MonoBehaviour
+public class ShopManager : SaiSingleton<ShopManager>
 {
     [Header("Debug Settings")]
     [SerializeField] protected bool showDebugLog = true;
@@ -23,8 +22,9 @@ public class ShopManager : MonoBehaviour
     private List<ItemProfileData> currentShopItems = new List<ItemProfileData>();
     public List<ItemProfileData> CurrentShopItems => currentShopItems;
 
-    public event System.Action<List<ShopData>> OnShopListChanged;
-    public event System.Action<List<ItemProfileData>> OnShopItemsChanged;
+    public event Action<List<ShopData>> OnShopListChanged;
+    public event Action<List<ItemProfileData>> OnShopItemsChanged;
+    public event Action<BuyItemResponse> OnItemBought;
 
     // Editor-only field
     public string selectedShopIdForEditor = null;
@@ -33,11 +33,12 @@ public class ShopManager : MonoBehaviour
     [SerializeField]
     public string itemProfileIdForEditor = null;
 
-    protected virtual void Start()
+    protected override void Awake()
     {
+        base.Awake();
         if (autoLoad && APIManager.Instance != null && APIManager.Instance.HasValidToken())
         {
-            FetchShopList();
+            GetShopList();
         }
     }
 
@@ -65,97 +66,80 @@ public class ShopManager : MonoBehaviour
     {
         if (autoLoad)
         {
-            FetchShopList();
+            GetShopList();
         }
     }
 
-    [ContextMenu("Fetch Shop List")]
-    public void FetchShopList()
+    public void GetShopList(Action<List<ShopData>> onComplete = null)
     {
         string endpoint = $"/games/{APIManager.Instance.GameId}/shops";
-        StartCoroutine(FetchShopListCoroutine(endpoint));
+        StartCoroutine(GetShopListCoroutine(endpoint, onComplete));
     }
 
-    public void FetchShopItems(string shopId)
+    public void GetShopItems(string shopId, Action<List<ItemProfileData>> onComplete = null)
     {
         string endpoint = $"/shops/{shopId}/item-profiles";
-        StartCoroutine(FetchShopItemsCoroutine(endpoint));
+        StartCoroutine(GetShopItemsCoroutine(endpoint, onComplete));
     }
 
-    private IEnumerator FetchShopItemsCoroutine(string endpoint)
+    private IEnumerator GetShopItemsCoroutine(string endpoint, Action<List<ItemProfileData>> onComplete)
     {
-        bool done = false;
-        ItemProfileResponse result = null;
-        APIManager.Instance.StartCoroutine(GetShopItemsFromAPI(endpoint, (ItemProfileResponse response) => {
+        ItemProfileListResponse result = null;
+        yield return StartCoroutine(APIManager.Instance.GetRequest<ItemProfileListResponse>(endpoint, (response) => {
             result = response;
-            done = true;
         }));
-        while (!done) yield return null;
+
         if (result != null && result.data != null)
         {
             currentShopItems = new List<ItemProfileData>(result.data);
             OnShopItemsChanged?.Invoke(currentShopItems);
+            onComplete?.Invoke(currentShopItems);
         }
         else
         {
-            Debug.LogWarning("No item profiles found in response.");
+            if (showDebugLog) Debug.LogWarning("No item profiles found in response.");
             currentShopItems = new List<ItemProfileData>();
             OnShopItemsChanged?.Invoke(currentShopItems);
+            onComplete?.Invoke(new List<ItemProfileData>());
         }
     }
 
-    private IEnumerator GetShopItemsFromAPI(string endpoint, System.Action<ItemProfileResponse> onComplete)
+    private IEnumerator GetShopListCoroutine(string endpoint, Action<List<ShopData>> onComplete)
     {
-        var method = typeof(APIManager).GetMethod("GetRequest", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var coroutine = (IEnumerator)method.MakeGenericMethod(typeof(ItemProfileResponse)).Invoke(APIManager.Instance, new object[] { endpoint, onComplete });
-        yield return StartCoroutine(coroutine);
-    }
-
-    private IEnumerator FetchShopListCoroutine(string endpoint)
-    {
-        bool done = false;
         ShopListResponse result = null;
-        APIManager.Instance.StartCoroutine(GetShopListFromAPI(endpoint, (ShopListResponse response) => {
+        yield return StartCoroutine(APIManager.Instance.GetRequest<ShopListResponse>(endpoint, (response) => {
             result = response;
-            done = true;
         }));
-        while (!done) yield return null;
+
         if (result != null && result.data != null)
         {
             shopList = result.data;
             OnShopListChanged?.Invoke(shopList);
+            onComplete?.Invoke(shopList);
         }
         else
         {
-            Debug.LogWarning("No shop data found in response.");
+            if (showDebugLog) Debug.LogWarning("No shop data found in response.");
             shopList = new List<ShopData>();
             OnShopListChanged?.Invoke(shopList);
+            onComplete?.Invoke(new List<ShopData>());
         }
     }
 
-    private IEnumerator GetShopListFromAPI(string endpoint, System.Action<ShopListResponse> onComplete)
-    {
-        var method = typeof(APIManager).GetMethod("GetRequest", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var coroutine = (IEnumerator)method.MakeGenericMethod(typeof(ShopListResponse)).Invoke(APIManager.Instance, new object[] { endpoint, onComplete });
-        yield return StartCoroutine(coroutine);
-    }
-
-    public void BuyItem(string shopId, string itemProfileId, int number)
+    public void BuyItem(string shopId, string itemProfileId, int number, Action<BuyItemResponse> onComplete = null)
     {
         string endpoint = $"/shops/{shopId}/item-profiles/{itemProfileId}";
         var requestBody = new BuyItemRequest { number = number };
-        StartCoroutine(BuyItemCoroutine(endpoint, requestBody));
+        StartCoroutine(BuyItemCoroutine(endpoint, requestBody, onComplete));
     }
 
-    private IEnumerator BuyItemCoroutine(string endpoint, BuyItemRequest requestBody)
+    private IEnumerator BuyItemCoroutine(string endpoint, BuyItemRequest requestBody, Action<BuyItemResponse> onComplete)
     {
-        bool done = false;
         BuyItemResponse result = null;
-        APIManager.Instance.StartCoroutine(PostRequestToAPI(endpoint, requestBody, (BuyItemResponse response) => {
+        yield return StartCoroutine(APIManager.Instance.PostRequest<BuyItemResponse>(endpoint, requestBody, (response) => {
             result = response;
-            done = true;
         }));
-        while (!done) yield return null;
+        
         if (result != null)
         {
             if(this.showDebugLog) Debug.Log($"Item purchased successfully: {result.message}");
@@ -164,18 +148,14 @@ public class ShopManager : MonoBehaviour
                 var item = result.data.my_items[0];
                 if (this.showDebugLog) Debug.Log($"Received item: {item.name}, Amount: {item.amount}");
             }
+            OnItemBought?.Invoke(result);
+            onComplete?.Invoke(result);
         }
         else
         {
             Debug.LogWarning("Failed to purchase item.");
+            onComplete?.Invoke(null);
         }
-    }
-
-    private IEnumerator PostRequestToAPI<T>(string endpoint, object data, System.Action<T> onComplete)
-    {
-        var method = typeof(APIManager).GetMethod("PostRequest", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var coroutine = (IEnumerator)method.MakeGenericMethod(typeof(T)).Invoke(APIManager.Instance, new object[] { endpoint, data, onComplete });
-        yield return StartCoroutine(coroutine);
     }
 
     [System.Serializable]
@@ -187,7 +167,7 @@ public class ShopManager : MonoBehaviour
     public void SelectShopById(string shopId)
     {
         selectedShopIdForEditor = shopId;
-        FetchShopItems(shopId);
+        GetShopItems(shopId);
     }
     
     public void UpdateItemProfileId(string shopId, string itemProfileId)

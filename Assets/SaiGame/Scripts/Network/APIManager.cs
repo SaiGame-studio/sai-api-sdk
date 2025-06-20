@@ -399,24 +399,12 @@ public class APIManager : SaiSingleton<APIManager>
     // Verify Token - Check if current token is valid and get a new one if needed
     public void VerifyToken(Action<TokenInfoResponse> onComplete)
     {
-        StartCoroutine(GetRequest("/auth/token-info", (TokenInfoResponse response) =>
-        {
-            if (response != null && response.IsValid())
-            {
-                // Cập nhật lại expiresAt từ response
-                tokenExpiresAt = response.expires_at;
-                UpdateTokenDisplayInfo();
-                if (showDebugLog) Debug.Log("Token verification successful, triggering OnAuthenticationSuccess event");
-                OnAuthenticationSuccess?.Invoke();
-            }
-            onComplete?.Invoke(response);
-        }));
+        StartCoroutine(GetRequest<TokenInfoResponse>("/auth/token-info", onComplete));
     }
 
     // Generic POST request
-    private IEnumerator PostRequest<T>(string endpoint, object data, Action<T> onComplete)
+    public IEnumerator PostRequest<T>(string endpoint, object data, Action<T> onComplete)
     {
-
         string url = baseURL + endpoint;
         string jsonData = JsonUtility.ToJson(data);
 
@@ -464,16 +452,16 @@ public class APIManager : SaiSingleton<APIManager>
     }
 
     // Generic GET request
-    private IEnumerator GetRequest<T>(string endpoint, Action<T> onComplete)
+    public IEnumerator GetRequest<T>(string endpoint, Action<T> onComplete)
     {
         string url = baseURL + endpoint;
+        if (showDebugLog) Debug.Log($"[APIManager] GET: {url}");
 
         using (UnityWebRequest request = UnityWebRequest.Get(url))
         {
             // Set headers
             request.SetRequestHeader("Content-Type", "application/json");
             request.SetRequestHeader("Accept", "application/json");
-            if (this.showDebugLog) Debug.Log("<b>GET:</b>" + endpoint);
 
             string token = GetAuthToken();
 

@@ -265,7 +265,7 @@ public class ShopUISetup : MonoBehaviour
         backRect.anchorMin = new Vector2(0, 1);
         backRect.anchorMax = new Vector2(0, 1);
         backRect.pivot = new Vector2(0, 1);
-        backRect.anchoredPosition = new Vector2(20, -20); // Position at top-left corner
+        backRect.anchoredPosition = new Vector2(320, -20); // Dịch sang phải để tránh đè lên Title
         backRect.sizeDelta = new Vector2(200, 80);
 
         // Create My Item button and position it to the right of the Main Menu button
@@ -296,11 +296,38 @@ public class ShopUISetup : MonoBehaviour
         myItemRect.anchorMin = new Vector2(0, 1);
         myItemRect.anchorMax = new Vector2(0, 1);
         myItemRect.pivot = new Vector2(0, 1);
-        // Position next to the main menu button: main menu pos x (20) + main menu width (200) + spacing (10)
-        myItemRect.anchoredPosition = new Vector2(230, -20); 
+        // Position next to the main menu button: main menu pos x (320) + main menu width (200) + spacing (10)
+        myItemRect.anchoredPosition = new Vector2(530, -20); 
         myItemRect.sizeDelta = new Vector2(150, 80);
 
-        // Create Refresh button and position it to the right of the My Item button
+        // Create Buy Item Button and position it to the right of the My Item button
+        GameObject buyItemButtonGO = CreateButton("BuyItemButton", "BUY ITEM", mainPanel.transform);
+        buyItemButton = buyItemButtonGO.GetComponent<Button>();
+        
+        // Set color cho buy item button
+        ColorBlock buyItemColors = buyItemButton.colors;
+        buyItemColors.normalColor = new Color(0.8f, 0.4f, 0.2f, 1f); // Orange color
+        buyItemColors.highlightedColor = new Color(0.9f, 0.5f, 0.3f, 1f);
+        buyItemColors.pressedColor = new Color(0.7f, 0.3f, 0.1f, 1f);
+        buyItemButton.colors = buyItemColors;
+
+        // Set font size cho buy item button text
+        TextMeshProUGUI buyItemText = buyItemButton.GetComponentInChildren<TextMeshProUGUI>();
+        if (buyItemText != null)
+        {
+            buyItemText.fontSize = 24;
+            buyItemText.alignment = TextAlignmentOptions.Center;
+        }
+
+        RectTransform buyItemRect = buyItemButton.GetComponent<RectTransform>();
+        buyItemRect.anchorMin = new Vector2(0, 1);
+        buyItemRect.anchorMax = new Vector2(0, 1);
+        buyItemRect.pivot = new Vector2(0, 1);
+        // Position next to the my item button: my item pos x (530) + my item width (150) + spacing (10)
+        buyItemRect.anchoredPosition = new Vector2(690, -20); 
+        buyItemRect.sizeDelta = new Vector2(200, 80);
+
+        // Create Refresh button and position it at top-right corner
         GameObject refreshButtonGO = CreateButton("RefreshButton", "Refresh", mainPanel.transform);
         refreshButton = refreshButtonGO.GetComponent<Button>();
         
@@ -325,39 +352,12 @@ public class ShopUISetup : MonoBehaviour
         refreshButton.colors = cb;
 
         RectTransform refreshRect = refreshButton.GetComponent<RectTransform>();
-        refreshRect.anchorMin = new Vector2(0, 1);
-        refreshRect.anchorMax = new Vector2(0, 1);
-        refreshRect.pivot = new Vector2(0, 1);
-        // Position next to the my item button: my item pos x (230) + my item width (150) + spacing (10)
-        refreshRect.anchoredPosition = new Vector2(390, -20); 
+        refreshRect.anchorMin = new Vector2(1, 1);
+        refreshRect.anchorMax = new Vector2(1, 1);
+        refreshRect.pivot = new Vector2(1, 1);
+        // Position at top-right corner
+        refreshRect.anchoredPosition = new Vector2(-20, -20); 
         refreshRect.sizeDelta = new Vector2(120, 80);
-
-        // Create Buy Item Button and position it to the right of the Refresh button
-        GameObject buyItemButtonGO = CreateButton("BuyItemButton", "BUY ITEM", mainPanel.transform);
-        buyItemButton = buyItemButtonGO.GetComponent<Button>();
-        
-        // Set color cho buy item button
-        ColorBlock buyItemColors = buyItemButton.colors;
-        buyItemColors.normalColor = new Color(0.8f, 0.4f, 0.2f, 1f); // Orange color
-        buyItemColors.highlightedColor = new Color(0.9f, 0.5f, 0.3f, 1f);
-        buyItemColors.pressedColor = new Color(0.7f, 0.3f, 0.1f, 1f);
-        buyItemButton.colors = buyItemColors;
-
-        // Set font size cho buy item button text
-        TextMeshProUGUI buyItemText = buyItemButton.GetComponentInChildren<TextMeshProUGUI>();
-        if (buyItemText != null)
-        {
-            buyItemText.fontSize = 24;
-            buyItemText.alignment = TextAlignmentOptions.Center;
-        }
-
-        RectTransform buyItemRect = buyItemButton.GetComponent<RectTransform>();
-        buyItemRect.anchorMin = new Vector2(0, 1);
-        buyItemRect.anchorMax = new Vector2(0, 1);
-        buyItemRect.pivot = new Vector2(0, 1);
-        // Position next to the refresh button: refresh pos x (390) + refresh width (120) + spacing (10)
-        buyItemRect.anchoredPosition = new Vector2(520, -20); 
-        buyItemRect.sizeDelta = new Vector2(200, 80);
 
         // Create Back to Shop Selection Button (initially hidden, position at center of top area)
         GameObject backToShopSelectionBtn = CreateButton("BackToShopSelectionButton", "BACK TO SHOPS", mainPanel.transform);
@@ -365,7 +365,7 @@ public class ShopUISetup : MonoBehaviour
         backToShopSelectionRect.anchorMin = new Vector2(0, 1);
         backToShopSelectionRect.anchorMax = new Vector2(0, 1);
         backToShopSelectionRect.pivot = new Vector2(0, 1);
-        backToShopSelectionRect.anchoredPosition = new Vector2(580, -20); // Position to the right of Buy Item button
+        backToShopSelectionRect.anchoredPosition = new Vector2(900, -20); // Position to the right of Buy Item button
         backToShopSelectionRect.sizeDelta = new Vector2(200, 80);
         backToShopSelectionBtn.SetActive(false); // Initially hidden
 
@@ -495,17 +495,17 @@ public class ShopUISetup : MonoBehaviour
         // Create Shop Item Prefab
         CreateShopItemPrefab();
 
-        // Create Scene Title "Shops" at top-right corner
+        // Create Scene Title "Shops" at top-left corner
         GameObject sceneTitleGO = CreateText("SceneTitle", "Shops", mainPanel.transform, 48);
         RectTransform sceneTitleRect = sceneTitleGO.GetComponent<RectTransform>();
-        sceneTitleRect.anchorMin = new Vector2(1, 1);
-        sceneTitleRect.anchorMax = new Vector2(1, 1);
-        sceneTitleRect.pivot = new Vector2(1, 1);
-        sceneTitleRect.anchoredPosition = new Vector2(-20, -20); // Top-right corner with margin
+        sceneTitleRect.anchorMin = new Vector2(0, 1);
+        sceneTitleRect.anchorMax = new Vector2(0, 1);
+        sceneTitleRect.pivot = new Vector2(0, 1);
+        sceneTitleRect.anchoredPosition = new Vector2(20, -20); // Top-left corner with margin
         sceneTitleRect.sizeDelta = new Vector2(300, 80);
         TextMeshProUGUI sceneTitleText = sceneTitleGO.GetComponent<TextMeshProUGUI>();
         sceneTitleText.color = Color.white;
-        sceneTitleText.alignment = TextAlignmentOptions.TopRight;
+        sceneTitleText.alignment = TextAlignmentOptions.TopLeft;
         sceneTitleText.fontStyle = FontStyles.Bold;
 
         // Create Status Text (position at bottom center)

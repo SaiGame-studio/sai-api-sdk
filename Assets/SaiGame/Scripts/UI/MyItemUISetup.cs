@@ -238,12 +238,16 @@ public class MyItemUISetup : MonoBehaviour
         ContentSizeFitter contentFitter = container.AddComponent<ContentSizeFitter>();
         contentFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-        // Add VerticalLayoutGroup to container
-        VerticalLayoutGroup layoutGroup = container.AddComponent<VerticalLayoutGroup>();
-        layoutGroup.spacing = 10;
-        layoutGroup.padding = new RectOffset(20, 20, 20, 20);
-        layoutGroup.childControlHeight = false;
-        layoutGroup.childControlWidth = true;
+        // Add GridLayoutGroup to container (thay thế VerticalLayoutGroup)
+        GridLayoutGroup gridLayout = container.AddComponent<GridLayoutGroup>();
+        gridLayout.cellSize = new Vector2(400, 150);
+        gridLayout.spacing = new Vector2(10, 10);
+        gridLayout.padding = new RectOffset(20, 20, 20, 20);
+        gridLayout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+        gridLayout.constraintCount = 4; // Tăng lên 4 cột
+        gridLayout.childAlignment = TextAnchor.UpperLeft;
+        gridLayout.startCorner = GridLayoutGroup.Corner.UpperLeft;
+        gridLayout.startAxis = GridLayoutGroup.Axis.Horizontal;
 
         // Set ScrollRect references
         itemScrollRect.viewport = viewportRect;
@@ -251,23 +255,61 @@ public class MyItemUISetup : MonoBehaviour
         itemScrollRect.vertical = true;
         itemScrollRect.horizontal = false;
 
-        // Create button panel
-        GameObject buttonPanel = CreateUIElement("ButtonPanel", mainPanel.transform);
-        RectTransform buttonPanelRect = buttonPanel.GetComponent<RectTransform>();
-        buttonPanelRect.anchorMin = new Vector2(0, 0);
-        buttonPanelRect.anchorMax = new Vector2(1, 0.1f);
-        buttonPanelRect.offsetMin = Vector2.zero;
-        buttonPanelRect.offsetMax = Vector2.zero;
+        // Create Back to Main Menu button
+        backToMainMenuButton = CreateButton("BackButton", "Back to Main Menu", mainPanel.transform);
+        TextMeshProUGUI backButtonText = backToMainMenuButton.GetComponentInChildren<TextMeshProUGUI>();
+        if (backButtonText != null)
+        {
+            backButtonText.alignment = TextAlignmentOptions.Center;
+            backButtonText.enableWordWrapping = true;
+        }
+        Image backImage = backToMainMenuButton.GetComponent<Image>();
+        if (backImage != null)
+        {
+            backImage.color = new Color(0.2f, 0.6f, 1f, 1f); // Blue background
+        }
+        ColorBlock backCb = backToMainMenuButton.colors;
+        backCb.normalColor = new Color(0.2f, 0.6f, 1f, 1f);
+        backCb.highlightedColor = new Color(0.3f, 0.7f, 1f, 1f);
+        backCb.pressedColor = new Color(0.15f, 0.5f, 0.9f, 1f);
+        backToMainMenuButton.colors = backCb;
 
-        HorizontalLayoutGroup buttonLayout = buttonPanel.AddComponent<HorizontalLayoutGroup>();
-        buttonLayout.spacing = 20;
-        buttonLayout.padding = new RectOffset(20, 20, 10, 10);
-        buttonLayout.childControlWidth = false;
-        buttonLayout.childControlHeight = true;
+        RectTransform backRect = backToMainMenuButton.GetComponent<RectTransform>();
+        backRect.anchorMin = new Vector2(0, 1);
+        backRect.anchorMax = new Vector2(0, 1);
+        backRect.pivot = new Vector2(0, 1);
+        backRect.anchoredPosition = new Vector2(20, -20); // Position at top-left
+        backRect.sizeDelta = new Vector2(200, 80); // Tăng chiều cao lên 80
 
-        // Create buttons
-        refreshButton = CreateButton("RefreshButton", "Refresh", buttonPanel.transform);
-        backToMainMenuButton = CreateButton("BackButton", "Back to Main Menu", buttonPanel.transform);
+        // Create Refresh button and position it to the right of the Back button
+        refreshButton = CreateButton("RefreshButton", "Refresh", mainPanel.transform);
+        
+        // Center the text in the refresh button
+        TextMeshProUGUI refreshButtonText = refreshButton.GetComponentInChildren<TextMeshProUGUI>();
+        if (refreshButtonText != null)
+        {
+            refreshButtonText.alignment = TextAlignmentOptions.Center;
+        }
+
+        // Style the refresh button to look nicer
+        Image refreshImage = refreshButton.GetComponent<Image>();
+        if (refreshImage != null)
+        {
+            refreshImage.color = new Color(0.2f, 0.8f, 0.2f, 1f); // Green background
+        }
+        ColorBlock cb = refreshButton.colors;
+        cb.normalColor = new Color(0.2f, 0.8f, 0.2f, 1f);
+        cb.highlightedColor = new Color(0.3f, 0.9f, 0.3f, 1f); // Lighter green on highlight
+        cb.pressedColor = new Color(0.15f, 0.7f, 0.15f, 1f); // Darker green on press
+        refreshButton.colors = cb;
+
+        RectTransform refreshRect = refreshButton.GetComponent<RectTransform>();
+        refreshRect.anchorMin = new Vector2(0, 1);
+        refreshRect.anchorMax = new Vector2(0, 1);
+        refreshRect.pivot = new Vector2(0, 1);
+        // Position next to the back button: back button pos x (20) + back button width (200) + spacing (10)
+        refreshRect.anchoredPosition = new Vector2(230, -20); 
+        refreshRect.sizeDelta = new Vector2(120, 80); // Tăng chiều cao lên 80
         
         // Create status text
         statusText = CreateText("StatusText", "", mainPanel.transform, 24).GetComponent<TextMeshProUGUI>();
@@ -304,43 +346,34 @@ public class MyItemUISetup : MonoBehaviour
 
         itemPrefab = CreateUIElement("ItemPrefab", null);
         RectTransform prefabRect = itemPrefab.GetComponent<RectTransform>();
-        prefabRect.sizeDelta = new Vector2(0, 120);
+        prefabRect.sizeDelta = new Vector2(400, 150); // Tăng kích thước lên 400x150
 
         // Add background image
         Image bgImage = itemPrefab.AddComponent<Image>();
         bgImage.color = new Color(0.3f, 0.3f, 0.3f, 0.8f);
 
-        // Add horizontal layout group
-        HorizontalLayoutGroup layout = itemPrefab.AddComponent<HorizontalLayoutGroup>();
-        layout.spacing = 15;
-        layout.padding = new RectOffset(15, 15, 10, 10);
-        layout.childControlWidth = false;
-        layout.childControlHeight = true;
+        // Tạo tên item ở góc trái trên
+        GameObject nameText = CreateText("NameText", "Item Name", itemPrefab.transform, 32);
+        TextMeshProUGUI nameTMP = nameText.GetComponent<TextMeshProUGUI>();
+        nameTMP.color = Color.white;
+        nameTMP.fontStyle = FontStyles.Bold;
+        nameTMP.alignment = TextAlignmentOptions.TopLeft;
+        RectTransform nameRect = nameText.GetComponent<RectTransform>();
+        nameRect.anchorMin = new Vector2(0, 0.5f);
+        nameRect.anchorMax = new Vector2(1, 1);
+        nameRect.offsetMin = new Vector2(10, 5);
+        nameRect.offsetMax = new Vector2(-10, -5);
 
-        // Create item info panel
-        GameObject infoPanel = CreateUIElement("InfoPanel", itemPrefab.transform);
-        RectTransform infoRect = infoPanel.GetComponent<RectTransform>();
-        infoRect.sizeDelta = new Vector2(0, 0);
-        infoRect.anchorMin = new Vector2(0, 0);
-        infoRect.anchorMax = new Vector2(1, 1);
-
-        VerticalLayoutGroup infoLayout = infoPanel.AddComponent<VerticalLayoutGroup>();
-        infoLayout.spacing = 5;
-        infoLayout.childControlWidth = true;
-        infoLayout.childControlHeight = false;
-
-        // Create item name text
-        GameObject nameText = CreateText("NameText", "Item Name", infoPanel.transform, 24);
-        nameText.GetComponent<TextMeshProUGUI>().color = Color.white;
-        nameText.GetComponent<TextMeshProUGUI>().fontStyle = FontStyles.Bold;
-
-        // Create item description text
-        GameObject descText = CreateText("DescriptionText", "Item Description", infoPanel.transform, 18);
-        descText.GetComponent<TextMeshProUGUI>().color = Color.gray;
-
-        // Create item details text
-        GameObject detailsText = CreateText("DetailsText", "Type: None | Amount: 0 | Level: 0", infoPanel.transform, 16);
-        detailsText.GetComponent<TextMeshProUGUI>().color = Color.cyan;
+        // Tạo số lượng item ở góc trái dưới
+        GameObject amountText = CreateText("AmountText", "Amount: 0", itemPrefab.transform, 28);
+        TextMeshProUGUI amountTMP = amountText.GetComponent<TextMeshProUGUI>();
+        amountTMP.color = Color.cyan;
+        amountTMP.alignment = TextAlignmentOptions.BottomLeft;
+        RectTransform amountRect = amountText.GetComponent<RectTransform>();
+        amountRect.anchorMin = new Vector2(0, 0);
+        amountRect.anchorMax = new Vector2(1, 0.5f);
+        amountRect.offsetMin = new Vector2(10, 5);
+        amountRect.offsetMax = new Vector2(-10, -5);
 
         // Add button component
         Button button = itemPrefab.AddComponent<Button>();
@@ -403,16 +436,12 @@ public class MyItemUISetup : MonoBehaviour
             itemObj.SetActive(true);
 
             // Set item name
-            TextMeshProUGUI nameText = itemObj.transform.Find("InfoPanel/NameText").GetComponent<TextMeshProUGUI>();
+            TextMeshProUGUI nameText = itemObj.transform.Find("NameText").GetComponent<TextMeshProUGUI>();
             nameText.text = item.name;
 
-            // Set item description
-            TextMeshProUGUI descText = itemObj.transform.Find("InfoPanel/DescriptionText").GetComponent<TextMeshProUGUI>();
-            descText.text = item.description;
-
-            // Set item details
-            TextMeshProUGUI detailsText = itemObj.transform.Find("InfoPanel/DetailsText").GetComponent<TextMeshProUGUI>();
-            detailsText.text = $"Type: {item.type} | Amount: {item.amount} | Level Max: {item.level_max} | Stackable: {(item.stackable == 1 ? "Yes" : "No")}";
+            // Set item amount
+            TextMeshProUGUI amountText = itemObj.transform.Find("AmountText").GetComponent<TextMeshProUGUI>();
+            amountText.text = $"Amount: {item.amount}";
 
             // Add click handler
             Button itemButton = itemObj.GetComponent<Button>();
@@ -435,7 +464,7 @@ public class MyItemUISetup : MonoBehaviour
     private void OnItemSelected(InventoryItem item)
     {
         ShowStatus($"Selected: {item.name} (Amount: {item.amount})");
-        Debug.Log($"[MyItemUISetup] Selected item: {item.name}, ID: {item.id}, Amount: {item.amount}");
+        //Debug.Log($"[MyItemUISetup] Selected item: {item.name}, ID: {item.id}, Amount: {item.amount}");
     }
 
     public void OnRefreshClick()
@@ -462,7 +491,7 @@ public class MyItemUISetup : MonoBehaviour
         {
             statusText.text = message;
         }
-        Debug.Log($"[MyItemUISetup] {message}");
+        //Debug.Log($"[MyItemUISetup] {message}");
     }
 
     private void ShowLoading(bool show)

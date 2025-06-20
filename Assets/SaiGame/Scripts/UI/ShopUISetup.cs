@@ -322,33 +322,23 @@ public class ShopUISetup : MonoBehaviour
             backToShopSelectionText.alignment = TextAlignmentOptions.Center;
         }
 
-        // Create Shop Selection Panel (position below the buttons)
+        // Create Shop Selection Panel (position below the buttons at top-left)
         GameObject shopSelectionPanelGO = CreateUIElement("ShopSelectionPanel", mainPanel.transform);
         RectTransform shopSelectionRect = shopSelectionPanelGO.GetComponent<RectTransform>();
-        shopSelectionRect.anchorMin = new Vector2(0, 0);
-        shopSelectionRect.anchorMax = new Vector2(0.3f, 0.9f); // Left 30% of screen, below buttons
-        shopSelectionRect.offsetMin = new Vector2(20, 20); // Margin from edges
-        shopSelectionRect.offsetMax = new Vector2(-10, -20);
+        shopSelectionRect.anchorMin = new Vector2(0, 1);
+        shopSelectionRect.anchorMax = new Vector2(0, 1);
+        shopSelectionRect.pivot = new Vector2(0, 1);
+        // Position below the buttons: buttons are at y=-20, button height=80, spacing=50
+        shopSelectionRect.anchoredPosition = new Vector2(20, -150); // -20 - 80 - 50 = -150
+        shopSelectionRect.sizeDelta = new Vector2(320, 400); // Fixed size for top-left corner
         shopSelectionPanel = shopSelectionPanelGO;
         shopSelectionPanel.SetActive(true); // Always visible
 
-        // Add Title to Shop Grid (left-aligned)
-        GameObject shopGridTitleGO = CreateText("ShopGridTitle", "Shops", shopSelectionPanelGO.transform, 28);
-        RectTransform shopGridTitleRect = shopGridTitleGO.GetComponent<RectTransform>();
-        shopGridTitleRect.pivot = new Vector2(0, 1);
-        shopGridTitleRect.anchorMin = new Vector2(0, 1);
-        shopGridTitleRect.anchorMax = new Vector2(0, 1);
-        shopGridTitleRect.anchoredPosition = new Vector2(0, 0); // Top left inside panel
-        shopGridTitleRect.sizeDelta = new Vector2(200, 40);
-        TextMeshProUGUI shopGridTitleText = shopGridTitleGO.GetComponent<TextMeshProUGUI>();
-        shopGridTitleText.alignment = TMPro.TextAlignmentOptions.TopLeft;
-        shopGridTitleGO.SetActive(true); // Always visible
-
-        // Create Shop Selection Container with Grid Layout
+        // Create Shop Selection Container with Grid Layout (use full panel space)
         GameObject shopSelectionContainerGO = CreateUIElement("ShopSelectionContainer", shopSelectionPanelGO.transform);
         RectTransform shopSelectionContainerRect = shopSelectionContainerGO.GetComponent<RectTransform>();
-        shopSelectionContainerRect.anchoredPosition = new Vector2(0, 50);
-        shopSelectionContainerRect.sizeDelta = new Vector2(400, 400);
+        shopSelectionContainerRect.anchoredPosition = new Vector2(0, 0);
+        shopSelectionContainerRect.sizeDelta = new Vector2(320, 400); // Use full panel space
         shopSelectionContainer = shopSelectionContainerGO.transform;
 
         // Add ScrollRect to shop selection container
@@ -357,7 +347,7 @@ public class ShopUISetup : MonoBehaviour
         // Create Content for Shop Selection ScrollRect
         GameObject shopSelectionContentGO = CreateUIElement("ShopSelectionContent", shopSelectionContainerGO.transform);
         RectTransform shopSelectionContentRect = shopSelectionContentGO.GetComponent<RectTransform>();
-        shopSelectionContentRect.sizeDelta = new Vector2(400, 400);
+        shopSelectionContentRect.sizeDelta = new Vector2(320, 400);
         shopSelectionContentRect.anchorMin = new Vector2(0, 0);
         shopSelectionContentRect.anchorMax = new Vector2(0, 1);
         shopSelectionContentRect.pivot = new Vector2(0, 1);
@@ -370,11 +360,11 @@ public class ShopUISetup : MonoBehaviour
 
         // Add Grid Layout Group to shop selection content
         GridLayoutGroup shopSelectionGridGroup = shopSelectionContentGO.AddComponent<GridLayoutGroup>();
-        shopSelectionGridGroup.cellSize = new Vector2(200, 100);
+        shopSelectionGridGroup.cellSize = new Vector2(300, 100); // Wider cells for better fit
         shopSelectionGridGroup.spacing = new Vector2(10, 10);
         shopSelectionGridGroup.padding = new RectOffset(10, 10, 10, 10);
         shopSelectionGridGroup.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-        shopSelectionGridGroup.constraintCount = 1; // 1 column for 200x100 buttons
+        shopSelectionGridGroup.constraintCount = 1; // 1 column for 300x100 buttons
 
         // Add Content Size Fitter to shop selection content
         ContentSizeFitter shopSelectionSizeFitter = shopSelectionContentGO.AddComponent<ContentSizeFitter>();
@@ -386,9 +376,9 @@ public class ShopUISetup : MonoBehaviour
         // Create Shop Items Panel (position to the right of shop selection panel)
         GameObject shopItemsPanelGO = CreateUIElement("ShopItemsPanel", mainPanel.transform);
         RectTransform shopItemsPanelRect = shopItemsPanelGO.GetComponent<RectTransform>();
-        shopItemsPanelRect.anchorMin = new Vector2(0.3f, 0);
-        shopItemsPanelRect.anchorMax = new Vector2(1, 0.9f); // Right 70% of screen, below buttons
-        shopItemsPanelRect.offsetMin = new Vector2(10, 20); // Margin from edges
+        shopItemsPanelRect.anchorMin = new Vector2(0, 0);
+        shopItemsPanelRect.anchorMax = new Vector2(1, 0.9f); // Full width, below buttons
+        shopItemsPanelRect.offsetMin = new Vector2(350, 20); // Start after shop selection panel (320 + 30 margin)
         shopItemsPanelRect.offsetMax = new Vector2(-20, -20);
         shopItemsPanel = shopItemsPanelGO;
 
@@ -440,6 +430,19 @@ public class ShopUISetup : MonoBehaviour
 
         // Create Shop Item Prefab
         CreateShopItemPrefab();
+
+        // Create Scene Title "Shops" at top-right corner
+        GameObject sceneTitleGO = CreateText("SceneTitle", "Shops", mainPanel.transform, 48);
+        RectTransform sceneTitleRect = sceneTitleGO.GetComponent<RectTransform>();
+        sceneTitleRect.anchorMin = new Vector2(1, 1);
+        sceneTitleRect.anchorMax = new Vector2(1, 1);
+        sceneTitleRect.pivot = new Vector2(1, 1);
+        sceneTitleRect.anchoredPosition = new Vector2(-20, -20); // Top-right corner with margin
+        sceneTitleRect.sizeDelta = new Vector2(300, 80);
+        TextMeshProUGUI sceneTitleText = sceneTitleGO.GetComponent<TextMeshProUGUI>();
+        sceneTitleText.color = Color.white;
+        sceneTitleText.alignment = TextAlignmentOptions.TopRight;
+        sceneTitleText.fontStyle = FontStyles.Bold;
 
         // Create Status Text (position at bottom center)
         GameObject statusGO = CreateText("StatusText", "", mainPanel.transform, 24);

@@ -28,11 +28,55 @@ public class MyItemUISetup : MonoBehaviour
     public string mainMenuSceneName = "2_MainMenu";
     public string shopSceneName = "3_Shop";
 
+    [Header("Dummy Data (Editor Only)")]
+    public bool showDummyData = true;
+    public int dummyItemCount = 8;
+
+    // Public methods for Inspector buttons
+    public void ShowDummyDataButton()
+    {
+        if (Application.isEditor)
+        {
+            LoadDummyData();
+        }
+        else
+        {
+            Debug.LogWarning("[MyItemUISetup] Dummy data only available in Editor mode");
+        }
+    }
+
+    public void DeleteDummyDataButton()
+    {
+        ClearItems();
+        ShowStatus("Dummy data deleted");
+    }
+
+    public void ToggleDummyDataButton()
+    {
+        showDummyData = !showDummyData;
+        if (showDummyData && Application.isEditor)
+        {
+            LoadDummyData();
+        }
+        else
+        {
+            ClearItems();
+            ShowStatus($"Dummy data {(showDummyData ? "enabled" : "disabled")}");
+        }
+    }
+
     // Private variables for tracking UI elements
     private List<GameObject> itemObjects = new List<GameObject>();
 
     void Start()
     {
+        // Clear dummy data if we're in play mode
+        if (Application.isPlaying)
+        {
+            ClearItems();
+            showDummyData = false; // Disable dummy data in play mode
+        }
+
         // Tự động tìm và liên kết APIManager và PlayerItemManager một lần duy nhất
         AutoLinkManagers();
 
@@ -88,8 +132,18 @@ public class MyItemUISetup : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("[MyItemUISetup] APIManager not found or no valid token. Waiting for authentication...");
-            ShowStatus("Waiting for authentication...");
+            Debug.LogWarning("[MyItemUISetup] APIManager not found or no valid token. Loading dummy data...");
+            ShowStatus("Loading dummy data...");
+            
+            // Load dummy data khi không có authentication (chỉ trong editor)
+            if (Application.isEditor && showDummyData)
+            {
+                LoadDummyData();
+            }
+            else
+            {
+                ShowStatus("Waiting for authentication...");
+            }
             
             // Nếu chưa có token, đợi authentication
             if (apiManager != null)
@@ -105,6 +159,9 @@ public class MyItemUISetup : MonoBehaviour
         {
             apiManager.OnAuthenticationSuccess -= OnAuthenticationSuccess;
         }
+        
+        // Clear dummy data and load real data
+        ClearItems();
         LoadPlayerItems();
     }
 
@@ -367,6 +424,12 @@ public class MyItemUISetup : MonoBehaviour
 
         // Create item prefab
         CreateItemPrefab();
+
+        // Load dummy data nếu được bật (chỉ trong editor)
+        if (Application.isEditor && showDummyData)
+        {
+            LoadDummyData();
+        }
     }
 
     private void CreateItemPrefab()
@@ -554,6 +617,19 @@ public class MyItemUISetup : MonoBehaviour
         OnRefreshClick();
     }
 
+    [ContextMenu("Load Dummy Data")]
+    public void TestLoadDummyData()
+    {
+        LoadDummyData();
+    }
+
+    [ContextMenu("Clear Dummy Data")]
+    public void TestClearDummyData()
+    {
+        ClearItems();
+        ShowStatus("Dummy data cleared");
+    }
+
     [ContextMenu("Clear Status")]
     public void ClearStatus()
     {
@@ -642,5 +718,42 @@ public class MyItemUISetup : MonoBehaviour
     {
         if (playerItemManager != null)
             playerItemManager.OnPlayerItemsChanged -= OnPlayerItemsLoaded;
+    }
+
+    private void LoadDummyData()
+    {
+        // Chỉ load dummy data trong editor mode
+        if (!Application.isEditor || !showDummyData) return;
+
+        List<InventoryItem> dummyItems = new List<InventoryItem>();
+        
+        string[] itemNames = {
+            "Sword of Light",
+            "Magic Staff",
+            "Golden Shield", 
+            "Health Potion",
+            "Mana Crystal",
+            "Steel Armor",
+            "Fire Scroll",
+            "Diamond Ring",
+            "Poison Dagger",
+            "Holy Book",
+            "Thunder Bow",
+            "Ice Wand"
+        };
+
+        for (int i = 0; i < dummyItemCount && i < itemNames.Length; i++)
+        {
+            InventoryItem dummyItem = new InventoryItem
+            {
+                id = $"dummy_{i}",
+                name = itemNames[i],
+                amount = Random.Range(1, 100)
+            };
+            dummyItems.Add(dummyItem);
+        }
+
+        ShowStatus($"Loaded {dummyItems.Count} dummy items (Editor Mode)");
+        PopulateItems(dummyItems);
     }
 } 

@@ -204,6 +204,50 @@ public class MyItemUISetupEditor : Editor
         {
             EditorGUILayout.HelpBox("PlayerItemManager is properly assigned.", MessageType.Info);
         }
+
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Dummy Data Controls", EditorStyles.boldLabel);
+
+        GUILayout.Space(10);
+        
+        // Dummy Data Controls Section (Editor Only)
+        EditorGUILayout.LabelField("Dummy Data Controls (Editor Only)", EditorStyles.boldLabel);
+        
+        if (Application.isEditor)
+        {
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                // Show Dummy Data button - Xanh lá
+                GUI.backgroundColor = new Color(0.2f, 0.8f, 0.2f, 1f);
+                if (GUILayout.Button("Show Dummy Data", GUILayout.Height(25)))
+                {
+                    myItemUISetup.ShowDummyDataButton();
+                }
+                GUI.backgroundColor = Color.white;
+
+                // Delete Dummy Data button - Đỏ
+                GUI.backgroundColor = new Color(0.8f, 0.2f, 0.2f, 1f);
+                if (GUILayout.Button("Delete Dummy Data", GUILayout.Height(25)))
+                {
+                    myItemUISetup.DeleteDummyDataButton();
+                }
+                GUI.backgroundColor = Color.white;
+            }
+
+            // Toggle Dummy Data button - Cam
+            GUI.backgroundColor = new Color(1f, 0.6f, 0.2f, 1f);
+            if (GUILayout.Button("Toggle Dummy Data", GUILayout.Height(25)))
+            {
+                myItemUISetup.ToggleDummyDataButton();
+            }
+            GUI.backgroundColor = Color.white;
+
+            EditorGUILayout.HelpBox("Dummy data helps you preview the UI layout without needing to play the game.", MessageType.Info);
+        }
+        else
+        {
+            EditorGUILayout.HelpBox("Dummy data controls are only available in Editor mode.", MessageType.Info);
+        }
     }
 }
 #endif 

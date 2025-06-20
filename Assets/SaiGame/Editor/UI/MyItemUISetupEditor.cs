@@ -207,14 +207,6 @@ public class MyItemUISetupEditor : Editor
         {
             EditorGUILayout.HelpBox("PlayerItemManager is properly assigned.", MessageType.Info);
         }
-
-        EditorGUILayout.Space();
-        EditorGUILayout.LabelField("Dummy Data Controls", EditorStyles.boldLabel);
-
-        GUILayout.Space(10);
-        
-        // Dummy Data Controls Section (Editor Only)
-        EditorGUILayout.LabelField("Dummy Data Controls (Editor Only)", EditorStyles.boldLabel);
         
         if (Application.isEditor)
         {

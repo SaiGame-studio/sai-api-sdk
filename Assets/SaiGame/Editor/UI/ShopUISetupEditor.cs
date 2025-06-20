@@ -8,7 +8,10 @@ public class ShopUISetupEditor : Editor
 {
     public override void OnInspectorGUI()
     {
-        DrawDefaultInspector();
+        serializedObject.Update();
+
+        // Draw all properties except the ones we want to move
+        DrawPropertiesExcluding(serializedObject, "showDummyData", "dummyShopCount", "dummyItemCount");
         
         ShopUISetup shopUISetup = (ShopUISetup)target;
         
@@ -250,6 +253,56 @@ public class ShopUISetupEditor : Editor
         {
             EditorGUILayout.LabelField("Shop Items Container:", "✗ Not found");
         }
+
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Dummy Data Controls", EditorStyles.boldLabel);
+
+        GUILayout.Space(10);
+        
+        // Dummy Data Controls Section (Editor Only)
+        EditorGUILayout.LabelField("Dummy Data Controls (Editor Only)", EditorStyles.boldLabel);
+        
+        if (Application.isEditor)
+        {
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("showDummyData"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("dummyShopCount"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("dummyItemCount"));
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                // Show Dummy Data button - Xanh lá
+                GUI.backgroundColor = new Color(0.2f, 0.8f, 0.2f, 1f);
+                if (GUILayout.Button("Show Dummy Data", GUILayout.Height(25)))
+                {
+                    shopUISetup.ShowDummyDataButton();
+                }
+                GUI.backgroundColor = Color.white;
+
+                // Delete Dummy Data button - Đỏ
+                GUI.backgroundColor = new Color(0.8f, 0.2f, 0.2f, 1f);
+                if (GUILayout.Button("Delete Dummy Data", GUILayout.Height(25)))
+                {
+                    shopUISetup.DeleteDummyDataButton();
+                }
+                GUI.backgroundColor = Color.white;
+            }
+
+            // Toggle Dummy Data button - Cam
+            GUI.backgroundColor = new Color(1f, 0.6f, 0.2f, 1f);
+            if (GUILayout.Button("Toggle Dummy Data", GUILayout.Height(25)))
+            {
+                shopUISetup.ToggleDummyDataButton();
+            }
+            GUI.backgroundColor = Color.white;
+
+            EditorGUILayout.HelpBox("Dummy data helps you preview the UI layout without needing to play the game.", MessageType.Info);
+        }
+        else
+        {
+            EditorGUILayout.HelpBox("Dummy data controls are only available in Editor mode.", MessageType.Info);
+        }
+
+        serializedObject.ApplyModifiedProperties();
     }
 }
 #endif 

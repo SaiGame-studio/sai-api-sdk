@@ -9,7 +9,6 @@ public class ShopUISetup : MonoBehaviour
 {
     [Header("Auto Setup UI")]
     public bool autoSetup = true;
-    public bool useDummyDataInEditor = true; // Tạo dummy data khi ở Editor mode
 
     [Header("APIManager Integration")]
     public APIManager apiManager;
@@ -32,6 +31,11 @@ public class ShopUISetup : MonoBehaviour
     [Header("Scene Management")]
     public string mainMenuSceneName = SceneNames.MAIN_MENU;
     public string myItemSceneName = SceneNames.MY_ITEMS;
+
+    [Header("Dummy Data (Editor Only)")]
+    public bool showDummyData = true;
+    public int dummyShopCount = 6;
+    public int dummyItemCount = 12;
 
     // Private variables for tracking UI elements
     private List<GameObject> shopItems = new List<GameObject>();
@@ -84,7 +88,7 @@ public class ShopUISetup : MonoBehaviour
     private void OnValidate()
     {
         // Tạo dummy data khi ở Editor mode và không play game
-        if (useDummyDataInEditor && !Application.isPlaying && autoSetup)
+        if (showDummyData && !Application.isPlaying && autoSetup)
         {
             CreateShopUI();
         }
@@ -131,8 +135,18 @@ public class ShopUISetup : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("[ShopUISetup] APIManager not found or no valid token. Waiting for authentication...");
-            ShowStatus("Waiting for authentication...");
+            Debug.LogWarning("[ShopUISetup] APIManager not found or no valid token. Loading dummy data...");
+            ShowStatus("Loading dummy data...");
+            
+            // Load dummy data khi không có authentication (chỉ trong editor)
+            if (Application.isEditor && showDummyData)
+            {
+                LoadDummyData();
+            }
+            else
+            {
+                ShowStatus("Waiting for authentication...");
+            }
             
             // Nếu chưa có token, đợi authentication
             if (apiManager != null)
@@ -148,6 +162,10 @@ public class ShopUISetup : MonoBehaviour
         {
             apiManager.OnAuthenticationSuccess -= OnAuthenticationSuccess;
         }
+        
+        // Clear dummy data and load real data
+        ClearShopSelectionItems();
+        ClearShopItems();
         LoadShopData();
     }
 
@@ -549,9 +567,9 @@ public class ShopUISetup : MonoBehaviour
         loadingPanel.SetActive(false);
 
         // Tạo dummy data nếu ở Editor mode
-        if (useDummyDataInEditor && !Application.isPlaying)
+        if (showDummyData && !Application.isPlaying)
         {
-            CreateDummyData();
+            LoadDummyData();
         }
     }
 
@@ -957,6 +975,20 @@ public class ShopUISetup : MonoBehaviour
         ShowLoading(false);
     }
 
+    [ContextMenu("Load Dummy Data")]
+    public void TestLoadDummyData()
+    {
+        LoadDummyData();
+    }
+
+    [ContextMenu("Clear Dummy Data")]
+    public void TestClearDummyData()
+    {
+        ClearShopSelectionItems();
+        ClearShopItems();
+        ShowStatus("Dummy data cleared");
+    }
+
     GameObject CreateUIElement(string name, Transform parent)
     {
         GameObject go = new GameObject(name);
@@ -1060,48 +1092,13 @@ public class ShopUISetup : MonoBehaviour
 
     private void CreateDummyData()
     {
-        // Tạo dummy shop data
-        List<ShopData> dummyShops = new List<ShopData>
-        {
-            new ShopData { id = "shop1", name = "Weapon Shop", description = "Best weapons in town" },
-            new ShopData { id = "shop2", name = "Armor Shop", description = "Protection for heroes" },
-            new ShopData { id = "shop3", name = "Potion Shop", description = "Healing and magic" },
-            new ShopData { id = "shop4", name = "Magic Shop", description = "Spells and scrolls" },
-            new ShopData { id = "shop5", name = "Food Shop", description = "Delicious meals" },
-            new ShopData { id = "shop6", name = "Tool Shop", description = "Crafting materials" }
-        };
-
-        // Tạo dummy item data
-        List<ItemProfileData> dummyItems = new List<ItemProfileData>
-        {
-            new ItemProfileData { id = "item1", item_profile = new ItemProfile { name = "Iron Sword", description = "A sharp iron sword" }, price_current = 100 },
-            new ItemProfileData { id = "item2", item_profile = new ItemProfile { name = "Steel Armor", description = "Strong steel armor" }, price_current = 200 },
-            new ItemProfileData { id = "item3", item_profile = new ItemProfile { name = "Health Potion", description = "Restores 50 HP" }, price_current = 50 },
-            new ItemProfileData { id = "item4", item_profile = new ItemProfile { name = "Magic Staff", description = "Powerful magic weapon" }, price_current = 300 },
-            new ItemProfileData { id = "item5", item_profile = new ItemProfile { name = "Golden Shield", description = "Legendary shield" }, price_current = 500 },
-            new ItemProfileData { id = "item6", item_profile = new ItemProfile { name = "Mana Potion", description = "Restores 50 MP" }, price_current = 75 },
-            new ItemProfileData { id = "item7", item_profile = new ItemProfile { name = "Dragon Scale", description = "Rare crafting material" }, price_current = 1000 },
-            new ItemProfileData { id = "item8", item_profile = new ItemProfile { name = "Fire Scroll", description = "Cast fireball spell" }, price_current = 150 },
-            new ItemProfileData { id = "item9", item_profile = new ItemProfile { name = "Leather Boots", description = "Lightweight boots" }, price_current = 80 },
-            new ItemProfileData { id = "item10", item_profile = new ItemProfile { name = "Crystal Ring", description = "Magical ring" }, price_current = 250 },
-            new ItemProfileData { id = "item11", item_profile = new ItemProfile { name = "Poison Dagger", description = "Venomous weapon" }, price_current = 180 },
-            new ItemProfileData { id = "item12", item_profile = new ItemProfile { name = "Holy Water", description = "Blessed healing item" }, price_current = 120 }
-        };
-
-        // Populate shop selection
-        PopulateShopSelection(dummyShops);
-        
-        // Populate shop items (simulate selecting first shop)
-        PopulateShopItems(dummyItems);
-        
-        // Show status
-        ShowStatus($"Dummy data loaded: {dummyShops.Count} shops, {dummyItems.Count} items");
+        // OLD CreateDummyData method removed - replaced with LoadDummyData
     }
 
     [ContextMenu("Create Dummy Data")]
     public void CreateDummyDataFromMenu()
     {
-        CreateDummyData();
+        LoadDummyData();
     }
 
     [ContextMenu("Clear Dummy Data")]
@@ -1110,5 +1107,146 @@ public class ShopUISetup : MonoBehaviour
         ClearShopSelectionItems();
         ClearShopItems();
         ShowStatus("Dummy data cleared");
+    }
+
+    // Public methods for Inspector buttons
+    public void ShowDummyDataButton()
+    {
+        if (Application.isEditor)
+        {
+            LoadDummyData();
+        }
+        else
+        {
+            Debug.LogWarning("[ShopUISetup] Dummy data only available in Editor mode");
+        }
+    }
+
+    public void DeleteDummyDataButton()
+    {
+        ClearShopSelectionItems();
+        ClearShopItems();
+        ShowStatus("Dummy data deleted");
+    }
+
+    public void ToggleDummyDataButton()
+    {
+        showDummyData = !showDummyData;
+        if (showDummyData && Application.isEditor)
+        {
+            LoadDummyData();
+        }
+        else
+        {
+            ClearShopSelectionItems();
+            ClearShopItems();
+            ShowStatus($"Dummy data {(showDummyData ? "enabled" : "disabled")}");
+        }
+    }
+
+    private void LoadDummyData()
+    {
+        // Chỉ load dummy data trong editor mode
+        if (!Application.isEditor || !showDummyData) return;
+
+        // Tạo dummy shop data
+        List<ShopData> dummyShops = new List<ShopData>();
+        string[] shopNames = {
+            "Weapon Shop",
+            "Armor Shop", 
+            "Potion Shop",
+            "Magic Shop",
+            "Food Shop",
+            "Tool Shop",
+            "Jewelry Shop",
+            "Book Shop",
+            "Pet Shop",
+            "Garden Shop"
+        };
+        
+        string[] shopDescriptions = {
+            "Best weapons in town",
+            "Protection for heroes",
+            "Healing and magic",
+            "Spells and scrolls", 
+            "Delicious meals",
+            "Crafting materials",
+            "Precious gems and rings",
+            "Ancient knowledge",
+            "Loyal companions",
+            "Beautiful plants"
+        };
+
+        for (int i = 0; i < dummyShopCount && i < shopNames.Length; i++)
+        {
+            ShopData dummyShop = new ShopData
+            {
+                id = $"dummy_shop_{i}",
+                name = shopNames[i],
+                description = shopDescriptions[i]
+            };
+            dummyShops.Add(dummyShop);
+        }
+
+        // Tạo dummy item data
+        List<ItemProfileData> dummyItems = new List<ItemProfileData>();
+        string[] itemNames = {
+            "Iron Sword",
+            "Steel Armor",
+            "Health Potion",
+            "Magic Staff",
+            "Golden Shield",
+            "Mana Potion",
+            "Dragon Scale",
+            "Fire Scroll",
+            "Leather Boots",
+            "Crystal Ring",
+            "Poison Dagger",
+            "Holy Water",
+            "Thunder Bow",
+            "Ice Wand",
+            "Phoenix Feather"
+        };
+        
+        string[] itemDescriptions = {
+            "A sharp iron sword",
+            "Strong steel armor",
+            "Restores 50 HP",
+            "Powerful magic weapon",
+            "Legendary shield",
+            "Restores 50 MP",
+            "Rare crafting material",
+            "Cast fireball spell",
+            "Lightweight boots",
+            "Magical ring",
+            "Venomous weapon",
+            "Blessed healing item",
+            "Lightning-fast bow",
+            "Freezes enemies",
+            "Rare magical item"
+        };
+
+        for (int i = 0; i < dummyItemCount && i < itemNames.Length; i++)
+        {
+            ItemProfileData dummyItem = new ItemProfileData
+            {
+                id = $"dummy_item_{i}",
+                item_profile = new ItemProfile 
+                { 
+                    name = itemNames[i], 
+                    description = itemDescriptions[i] 
+                },
+                price_current = Random.Range(50, 1000)
+            };
+            dummyItems.Add(dummyItem);
+        }
+
+        // Populate shop selection
+        PopulateShopSelection(dummyShops);
+        
+        // Populate shop items (simulate selecting first shop)
+        PopulateShopItems(dummyItems);
+        
+        ShowStatus($"Loaded {dummyShops.Count} dummy shops, {dummyItems.Count} dummy items (Editor Mode)");
     }
 } 

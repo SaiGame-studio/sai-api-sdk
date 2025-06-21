@@ -319,6 +319,8 @@ public class APIManager : SaiSingleton<APIManager>
             {
                 // Lưu token với thông tin expire
                 SetAuthTokenWithExpire(response.token, response.expires_at, response.expires_in);
+                if (showDebugLog) Debug.Log("Login successful, triggering OnAuthenticationSuccess event");
+                OnAuthenticationSuccess?.Invoke();
             }
             onComplete?.Invoke(response);
         }));
@@ -362,6 +364,8 @@ public class APIManager : SaiSingleton<APIManager>
             {
                 // Lưu token với thông tin expire
                 SetAuthTokenWithExpire(response.token, response.expires_at, response.expires_in);
+                if (showDebugLog) Debug.Log("Register successful, triggering OnAuthenticationSuccess event");
+                OnAuthenticationSuccess?.Invoke();
             }
             onComplete?.Invoke(response);
         }));
@@ -712,5 +716,14 @@ public class APIManager : SaiSingleton<APIManager>
     {
         string endpoint = $"/games/{gameId}/register/profiles";
         StartCoroutine(PostRequest<UserProfileResponse>(endpoint, null, onComplete));
+    }
+
+    /// <summary>
+    /// Trigger authentication success event from outside the class
+    /// </summary>
+    public void TriggerAuthenticationSuccess()
+    {
+        if (showDebugLog) Debug.Log("Triggering OnAuthenticationSuccess event");
+        OnAuthenticationSuccess?.Invoke();
     }
 }

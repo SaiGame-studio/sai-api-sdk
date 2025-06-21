@@ -105,7 +105,7 @@ GameObject:
   - component: {fileID: 3605935813267881035}
   - component: {fileID: 8000451207314421783}
   m_Layer: 0
-  m_Name: MyInventoryManager
+  m_Name: PlayerInventoryManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -139,8 +139,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   showDebugLog: 1
-  autoLoad: 1
   filteredInventoryItems: []
+  inventoryItems: []
+  selectedInventoryId: 
+  selectedInventoryName: 
+  isLoadingInventoryItems: 0
   selectedItemIdForEditor: 
 --- !u!1 &6972468403760703694
 GameObject:

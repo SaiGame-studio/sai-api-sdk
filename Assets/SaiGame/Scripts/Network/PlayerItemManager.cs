@@ -141,7 +141,6 @@ public class PlayerItemManager : SaiSingleton<PlayerItemManager>
         {
             playerItems = new List<InventoryItem>(result.data);
             
-            if (showDebugLog) Debug.Log($"[PlayerItemManager] Successfully loaded {playerItems.Count} player items");
             OnPlayerItemsChanged?.Invoke(playerItems);
             onComplete?.Invoke(playerItems);
         }

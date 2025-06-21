@@ -43,7 +43,6 @@ public class ShopManager : SaiSingleton<ShopManager>
         // Kiểm tra xem APIManager đã có token hợp lệ chưa
         if (autoLoad && APIManager.Instance != null && APIManager.Instance.HasValidToken())
         {
-            if (showDebugLog) Debug.Log("[ShopManager] AutoLoad: Found valid token, loading shop list");
             GetShopList();
         }
         
@@ -215,13 +214,11 @@ public class ShopManager : SaiSingleton<ShopManager>
         {
             shopList = result.data;
             
-            if (showDebugLog) Debug.Log($"[ShopManager] Successfully loaded {shopList.Count} shops");
             OnShopListChanged?.Invoke(shopList);
             onComplete?.Invoke(shopList);
         }
         else
         {
-            if (showDebugLog) Debug.LogWarning("[ShopManager] No shop data found in response.");
             shopList = new List<ShopData>();
             OnShopListChanged?.Invoke(shopList);
             onComplete?.Invoke(new List<ShopData>());

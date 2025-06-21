@@ -29,7 +29,6 @@ public class ItemProfileManager : SaiSingleton<ItemProfileManager>
         // Kiểm tra xem APIManager đã có token hợp lệ chưa
         if (autoLoad && APIManager.Instance != null && APIManager.Instance.HasValidToken())
         {
-            if (showDebugLog) Debug.Log("[ItemProfileManager] AutoLoad: Found valid token, loading item profiles");
             GetItemProfiles();
         }
         
@@ -156,7 +155,6 @@ public class ItemProfileManager : SaiSingleton<ItemProfileManager>
 
             itemProfiles = newItemProfiles;
 
-            if (showDebugLog) Debug.Log($"[ItemProfileManager] Successfully loaded and mapped {itemProfiles.Count} item profiles");
             OnItemProfilesChanged?.Invoke(itemProfiles);
             onComplete?.Invoke(itemProfiles);
         }

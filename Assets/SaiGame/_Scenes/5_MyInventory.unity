@@ -285,6 +285,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 633681008429833354, guid: 45192b4401665724fbbd74ca57cd25ed, type: 3}
+      propertyPath: autoLoad
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5429511496161679507, guid: 45192b4401665724fbbd74ca57cd25ed, type: 3}
       propertyPath: m_Name
       value: PlayerInventoryManager

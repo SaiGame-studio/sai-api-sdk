@@ -5,10 +5,8 @@ using System;
 
 public class ShopManager : SaiSingleton<ShopManager>
 {
-    [Header("Debug Settings")]
+    [Header("Settings")]
     [SerializeField] protected bool showDebugLog = true;
-
-    [Header("Auto Load Settings")]
     [Tooltip("If enabled, Refresh will be automatically called when game authentication is successful")]
     [SerializeField] protected bool autoLoad = false;
 
@@ -36,14 +34,35 @@ public class ShopManager : SaiSingleton<ShopManager>
     protected override void Awake()
     {
         base.Awake();
+    }
+
+    protected override void Start()
+    {
+        base.Start();
+        
+        // Kiểm tra xem APIManager đã có token hợp lệ chưa
         if (autoLoad && APIManager.Instance != null && APIManager.Instance.HasValidToken())
         {
+            if (showDebugLog) Debug.Log("[ShopManager] AutoLoad: Found valid token, loading shop list");
             GetShopList();
+        }
+        
+        // Đăng ký listener cho event authentication success
+        if (APIManager.Instance != null)
+        {
+            APIManager.Instance.OnAuthenticationSuccess += OnAuthenticationSuccess;
+        }
+        
+        // Bắt đầu coroutine kiểm tra định kỳ
+        if (autoLoad)
+        {
+            StartCoroutine(PeriodicAutoLoadCheck());
         }
     }
 
     protected virtual void OnEnable()
     {
+        // Đăng ký listener nếu chưa được đăng ký trong Start
         if (APIManager.Instance != null)
         {
             APIManager.Instance.OnAuthenticationSuccess += OnAuthenticationSuccess;
@@ -62,18 +81,86 @@ public class ShopManager : SaiSingleton<ShopManager>
     {
         if (autoLoad)
         {
+            if (showDebugLog) Debug.Log("[ShopManager] AutoLoad: Authentication success, loading shop list");
             GetShopList();
         }
     }
 
+    /// <summary>
+    /// Kiểm tra và trigger AutoLoad nếu cần thiết
+    /// Có thể gọi method này từ Inspector hoặc từ code khác
+    /// </summary>
+    [ContextMenu("Check and Trigger AutoLoad")]
+    public void CheckAndTriggerAutoLoad()
+    {
+        if (autoLoad && APIManager.Instance != null && APIManager.Instance.HasValidToken())
+        {
+            if (showDebugLog) Debug.Log("[ShopManager] Manual AutoLoad check: Found valid token, loading shop list");
+            GetShopList();
+        }
+        else
+        {
+            if (showDebugLog) Debug.Log("[ShopManager] Manual AutoLoad check: No valid token or autoLoad disabled");
+        }
+    }
+
+    /// <summary>
+    /// Test method để kiểm tra trạng thái AutoLoad
+    /// </summary>
+    [ContextMenu("Test AutoLoad Status")]
+    public void TestAutoLoadStatus()
+    {
+        Debug.Log($"[ShopManager] AutoLoad Status:");
+        Debug.Log($"  - autoLoad enabled: {autoLoad}");
+        Debug.Log($"  - APIManager exists: {APIManager.Instance != null}");
+        
+        if (APIManager.Instance != null)
+        {
+            Debug.Log($"  - Has valid token: {APIManager.Instance.HasValidToken()}");
+            Debug.Log($"  - Current token: {(!string.IsNullOrEmpty(APIManager.Instance.GetAuthToken()) ? "Present" : "None")}");
+        }
+        
+        Debug.Log($"  - Shop list loaded: {shopList.Count}");
+        Debug.Log($"  - Current shop items: {currentShopItems.Count}");
+        Debug.Log($"  - Event listeners: {(APIManager.Instance != null ? "Registered" : "Not registered")}");
+    }
+
     public void GetShopList(Action<List<ShopData>> onComplete = null)
     {
+        if (APIManager.Instance == null)
+        {
+            if (showDebugLog) Debug.LogWarning("[ShopManager] APIManager is null, cannot get shop list");
+            onComplete?.Invoke(new List<ShopData>());
+            return;
+        }
+
+        if (!APIManager.Instance.HasValidToken())
+        {
+            if (showDebugLog) Debug.LogWarning("[ShopManager] No valid token, cannot get shop list");
+            onComplete?.Invoke(new List<ShopData>());
+            return;
+        }
+
         string endpoint = $"/games/{APIManager.Instance.GameId}/shops";
         StartCoroutine(GetShopListCoroutine(endpoint, onComplete));
     }
 
     public void GetShopItems(string shopId, Action<List<ItemProfileData>> onComplete = null)
     {
+        if (APIManager.Instance == null)
+        {
+            if (showDebugLog) Debug.LogWarning("[ShopManager] APIManager is null, cannot get shop items");
+            onComplete?.Invoke(new List<ItemProfileData>());
+            return;
+        }
+
+        if (!APIManager.Instance.HasValidToken())
+        {
+            if (showDebugLog) Debug.LogWarning("[ShopManager] No valid token, cannot get shop items");
+            onComplete?.Invoke(new List<ItemProfileData>());
+            return;
+        }
+
         string endpoint = $"/shops/{shopId}/item-profiles";
         StartCoroutine(GetShopItemsCoroutine(endpoint, onComplete));
     }
@@ -103,12 +190,14 @@ public class ShopManager : SaiSingleton<ShopManager>
             }
 
             currentShopItems = newItemProfiles;
+            
+            if (showDebugLog) Debug.Log($"[ShopManager] Successfully loaded and mapped {currentShopItems.Count} shop items");
             OnShopItemsChanged?.Invoke(currentShopItems);
             onComplete?.Invoke(currentShopItems);
         }
         else
         {
-            if (showDebugLog) Debug.LogWarning("No item profiles found in response.");
+            if (showDebugLog) Debug.LogWarning("[ShopManager] No shop items found in response.");
             currentShopItems.Clear();
             OnShopItemsChanged?.Invoke(currentShopItems);
             onComplete?.Invoke(currentShopItems);
@@ -125,12 +214,14 @@ public class ShopManager : SaiSingleton<ShopManager>
         if (result != null && result.data != null)
         {
             shopList = result.data;
+            
+            if (showDebugLog) Debug.Log($"[ShopManager] Successfully loaded {shopList.Count} shops");
             OnShopListChanged?.Invoke(shopList);
             onComplete?.Invoke(shopList);
         }
         else
         {
-            if (showDebugLog) Debug.LogWarning("No shop data found in response.");
+            if (showDebugLog) Debug.LogWarning("[ShopManager] No shop data found in response.");
             shopList = new List<ShopData>();
             OnShopListChanged?.Invoke(shopList);
             onComplete?.Invoke(new List<ShopData>());
@@ -139,6 +230,20 @@ public class ShopManager : SaiSingleton<ShopManager>
 
     public void BuyItem(string shopId, string itemProfileId, int number, Action<BuyItemResponse> onComplete = null)
     {
+        if (APIManager.Instance == null)
+        {
+            if (showDebugLog) Debug.LogWarning("[ShopManager] APIManager is null, cannot buy item");
+            onComplete?.Invoke(null);
+            return;
+        }
+
+        if (!APIManager.Instance.HasValidToken())
+        {
+            if (showDebugLog) Debug.LogWarning("[ShopManager] No valid token, cannot buy item");
+            onComplete?.Invoke(null);
+            return;
+        }
+
         string endpoint = $"/shops/{shopId}/item-profiles/{itemProfileId}";
         var requestBody = new BuyItemRequest { number = number };
         StartCoroutine(BuyItemCoroutine(endpoint, requestBody, onComplete));
@@ -153,19 +258,46 @@ public class ShopManager : SaiSingleton<ShopManager>
         
         if (result != null)
         {
-            if(this.showDebugLog) Debug.Log($"Item purchased successfully: {result.message}");
+            if (showDebugLog) Debug.Log($"[ShopManager] Item purchased successfully: {result.message}");
             if (result.data?.my_items?.Count > 0)
             {
                 var item = result.data.my_items[0];
-                if (this.showDebugLog) Debug.Log($"Received item: {item.name}, Amount: {item.amount}");
+                if (showDebugLog) Debug.Log($"[ShopManager] Received item: {item.name}, Amount: {item.amount}");
             }
             OnItemBought?.Invoke(result);
             onComplete?.Invoke(result);
         }
         else
         {
-            Debug.LogWarning("Failed to purchase item.");
+            if (showDebugLog) Debug.LogWarning("[ShopManager] Failed to purchase item.");
             onComplete?.Invoke(null);
+        }
+    }
+
+    /// <summary>
+    /// Coroutine kiểm tra định kỳ để đảm bảo AutoLoad hoạt động
+    /// </summary>
+    private IEnumerator PeriodicAutoLoadCheck()
+    {
+        yield return new WaitForSeconds(1f); // Đợi 1 giây để các manager khác khởi tạo
+        
+        // Kiểm tra lần đầu
+        if (autoLoad && APIManager.Instance != null && APIManager.Instance.HasValidToken() && shopList.Count == 0)
+        {
+            if (showDebugLog) Debug.Log("[ShopManager] Periodic check: Found valid token but no shops loaded, loading now");
+            GetShopList();
+        }
+        
+        // Kiểm tra định kỳ mỗi 5 giây
+        while (autoLoad)
+        {
+            yield return new WaitForSeconds(5f);
+            
+            if (APIManager.Instance != null && APIManager.Instance.HasValidToken() && shopList.Count == 0)
+            {
+                if (showDebugLog) Debug.Log("[ShopManager] Periodic check: Found valid token but no shops loaded, loading now");
+                GetShopList();
+            }
         }
     }
 
@@ -185,6 +317,6 @@ public class ShopManager : SaiSingleton<ShopManager>
     {
         selectedShopIdForEditor = shopId;
         itemProfileIdForEditor = itemProfileId;
-        if (showDebugLog) Debug.Log($"Selected Item Profile ID: {itemProfileId} from Shop ID: {shopId}");
+        if (showDebugLog) Debug.Log($"[ShopManager] Selected Item Profile ID: {itemProfileId} from Shop ID: {shopId}");
     }
 } 

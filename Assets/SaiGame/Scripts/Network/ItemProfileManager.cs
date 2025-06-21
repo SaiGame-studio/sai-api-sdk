@@ -5,10 +5,8 @@ using System;
 
 public class ItemProfileManager : SaiSingleton<ItemProfileManager>
 {
-    [Header("Debug Settings")]
+    [Header("Settings")]
     [SerializeField] protected bool showDebugLog = true;
-
-    [Header("Auto Load Settings")]
     [Tooltip("If enabled, Refresh will be automatically called when game authentication is successful")]
     [SerializeField] protected bool autoLoad = false;
 

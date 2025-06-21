@@ -102,7 +102,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3605935813267881035}
-  - component: {fileID: 6959936445649890451}
+  - component: {fileID: 8000451207314421783}
   m_Layer: 0
   m_Name: MyInventoryManager
   m_TagString: Untagged
@@ -125,7 +125,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 7176863583007664123}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6959936445649890451
+--- !u!114 &8000451207314421783
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -134,12 +134,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 5429511496161679507}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7b8c9d1e2f3a4b5c6d7e8f9a0b1c2d3e, type: 3}
+  m_Script: {fileID: 11500000, guid: 9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   showDebugLog: 1
-  autoLoad: 1
-  inventoryItems: []
+  autoLoad: 0
   filteredInventoryItems: []
   selectedItemIdForEditor: 
 --- !u!1 &6972468403760703694
@@ -243,15 +242,15 @@ MonoBehaviour:
   baseURL: https://local-api.saigame.studio/api
   showDebugLog: 1
   storageType: 0
-  rememberedEmail: user_c84dfed9_a7e9_49e9_b558_01c8ad5e9022@example.com
+  rememberedEmail: 113@113.1131
   rememberEmailEnabled: 1
-  currentTokenDisplay: 227|LTYrcL...o7472ddb77
+  currentTokenDisplay: 272|IcatQU...61e0a4d888
   hasValidTokenDisplay: 1
   tokenStorageTypeDisplay: EncryptedPlayerPrefs
   tokenLengthDisplay: 52
   isTokenExpired: 0
   timeUntilExpire: N/A
-  currentToken: 227|LTYrcLnBoCLEJXX3fGcR6lLKLRIha5gFFXUgCvo7472ddb77
+  currentToken: 272|IcatQUdcun5DxOlOHbyT697XvkFmtgaXKFLsgo61e0a4d888
   tokenExpiresAt: 0
   tokenExpiresIn: 0
   gameId: 68482e25731d20624900f952

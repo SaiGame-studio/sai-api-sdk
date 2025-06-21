@@ -87,16 +87,31 @@ public class ShopManager : SaiSingleton<ShopManager>
 
         if (result != null && result.data != null)
         {
-            currentShopItems = new List<ItemProfileData>(result.data);
+            var newItemProfiles = new List<ItemProfileData>();
+            foreach (var profile in result.data)
+            {
+                var profileData = new ItemProfileData
+                {
+                    item_profile = profile,
+                    id = profile.id,
+                    item_profile_id = profile.id,
+                    game_id = profile.game_id,
+                    created_at = profile.created_at,
+                    updated_at = profile.updated_at
+                };
+                newItemProfiles.Add(profileData);
+            }
+
+            currentShopItems = newItemProfiles;
             OnShopItemsChanged?.Invoke(currentShopItems);
             onComplete?.Invoke(currentShopItems);
         }
         else
         {
             if (showDebugLog) Debug.LogWarning("No item profiles found in response.");
-            currentShopItems = new List<ItemProfileData>();
+            currentShopItems.Clear();
             OnShopItemsChanged?.Invoke(currentShopItems);
-            onComplete?.Invoke(new List<ItemProfileData>());
+            onComplete?.Invoke(currentShopItems);
         }
     }
 

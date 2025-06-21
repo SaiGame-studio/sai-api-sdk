@@ -8,7 +8,7 @@ public class ItemProfileManager : SaiSingleton<ItemProfileManager>
     [Header("Settings")]
     [SerializeField] protected bool showDebugLog = true;
     [Tooltip("If enabled, Refresh will be automatically called when game authentication is successful")]
-    [SerializeField] protected bool autoLoad = false;
+    [SerializeField] protected bool autoLoad = true;
 
     [Header("Item Profiles (Read Only)")]
     [SerializeField]

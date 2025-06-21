@@ -92,6 +92,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   showDebugLog: 1
+  autoLoad: 1
   playerItems: []
 --- !u!1 &5429511496161679507
 GameObject:
@@ -138,7 +139,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   showDebugLog: 1
-  autoLoad: 0
+  autoLoad: 1
   filteredInventoryItems: []
   selectedItemIdForEditor: 
 --- !u!1 &6972468403760703694

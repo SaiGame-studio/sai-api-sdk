@@ -8,7 +8,7 @@ public class ShopManager : SaiSingleton<ShopManager>
     [Header("Settings")]
     [SerializeField] protected bool showDebugLog = true;
     [Tooltip("If enabled, Refresh will be automatically called when game authentication is successful")]
-    [SerializeField] protected bool autoLoad = false;
+    [SerializeField] protected bool autoLoad = true;
 
     [Header("Shop List (Read Only)")]
     [SerializeField]

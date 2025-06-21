@@ -6,12 +6,10 @@ using System.Linq;
 
 public class PlayerInventoryManager : SaiSingleton<PlayerInventoryManager>
 {
-    [Header("Debug Settings")]
+    [Header("Settings")]
     [SerializeField] protected bool showDebugLog = true;
-
-    [Header("Auto Load Settings")]
     [Tooltip("If enabled, Refresh will be automatically called when game authentication is successful")]
-    [SerializeField] protected bool autoLoad = false;
+    [SerializeField] protected bool autoLoad = true;
 
     [Header("Filtered Inventory Items (Type = Inventory)")]
     [SerializeField]

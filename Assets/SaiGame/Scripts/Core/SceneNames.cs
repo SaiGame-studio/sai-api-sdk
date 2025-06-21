@@ -35,9 +35,9 @@ public static class SceneNames
     public const string MY_ITEMS = "4_MyItems";
     
     /// <summary>
-    /// Scene my character
+    /// Scene my inventory
     /// </summary>
-    public const string MY_CHARACTER = "5_MyCharacter";
+    public const string MY_INVENTORY = "5_MyInventory";
     
     // Thêm các scene khác khi cần
     // public const string PROFILE = "Profile";
@@ -56,7 +56,7 @@ public static class SceneNames
                 sceneName == MAIN_MENU ||
                 sceneName == SHOP ||
                 sceneName == MY_ITEMS ||
-                sceneName == MY_CHARACTER);
+                sceneName == MY_INVENTORY);
     }
     
     /// <summary>
@@ -72,7 +72,7 @@ public static class SceneNames
             MAIN_MENU,
             SHOP,
             MY_ITEMS,
-            MY_CHARACTER
+            MY_INVENTORY
         };
     }
 } 

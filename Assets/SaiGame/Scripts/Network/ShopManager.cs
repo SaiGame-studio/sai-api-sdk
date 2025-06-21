@@ -166,41 +166,111 @@ public class ShopManager : SaiSingleton<ShopManager>
 
     private IEnumerator GetShopItemsCoroutine(string endpoint, Action<List<ItemProfileData>> onComplete)
     {
-        ItemProfileListResponse result = null;
-        yield return StartCoroutine(APIManager.Instance.GetRequest<ItemProfileListResponse>(endpoint, (response) => {
-            result = response;
+        // Try to get shop item profiles first (with price info)
+        ShopItemProfileListResponse shopItemResult = null;
+        yield return StartCoroutine(APIManager.Instance.GetRequest<ShopItemProfileListResponse>(endpoint, (response) => {
+            shopItemResult = response;
         }));
 
-        if (result != null && result.data != null)
+        if (shopItemResult != null && shopItemResult.data != null)
         {
+            // If we get ShopItemProfile response (with price info)
             var newItemProfiles = new List<ItemProfileData>();
-            foreach (var profile in result.data)
+            
+            foreach (var shopItem in shopItemResult.data)
             {
                 var profileData = new ItemProfileData
                 {
-                    item_profile = profile,
-                    id = profile.id,
-                    item_profile_id = profile.id,
-                    game_id = profile.game_id,
-                    created_at = profile.created_at,
-                    updated_at = profile.updated_at
+                    item_profile = shopItem.item_profile,
+                    id = shopItem.id,
+                    item_profile_id = shopItem.item_profile_id,
+                    game_id = shopItem.item_profile?.game_id,
+                    shop_id = shopItem.shop_id,
+                    created_at = shopItem.created_at,
+                    updated_at = shopItem.updated_at,
+                    price_current = shopItem.price_current,
+                    price_old = shopItem.price_old
                 };
+                
                 newItemProfiles.Add(profileData);
             }
 
             currentShopItems = newItemProfiles;
             
-            if (showDebugLog) Debug.Log($"[ShopManager] Successfully loaded and mapped {currentShopItems.Count} shop items");
             OnShopItemsChanged?.Invoke(currentShopItems);
             onComplete?.Invoke(currentShopItems);
         }
         else
         {
-            if (showDebugLog) Debug.LogWarning("[ShopManager] No shop items found in response.");
-            currentShopItems.Clear();
-            OnShopItemsChanged?.Invoke(currentShopItems);
-            onComplete?.Invoke(currentShopItems);
+            // Fallback to the old ItemProfile response (without price info)
+            ItemProfileListResponse result = null;
+            yield return StartCoroutine(APIManager.Instance.GetRequest<ItemProfileListResponse>(endpoint, (response) => {
+                result = response;
+            }));
+
+            if (result != null && result.data != null)
+            {
+                var newItemProfiles = new List<ItemProfileData>();
+                
+                // Extract shop_id from the endpoint
+                string shopId = ExtractShopIdFromEndpoint(endpoint);
+                
+                foreach (var profile in result.data)
+                {
+                    var profileData = new ItemProfileData
+                    {
+                        item_profile = profile,
+                        id = profile.id,
+                        item_profile_id = profile.id,
+                        game_id = profile.game_id,
+                        shop_id = shopId, // Assign shop_id from endpoint
+                        created_at = profile.created_at,
+                        updated_at = profile.updated_at,
+                        // Set default prices when not available from API
+                        price_current = UnityEngine.Random.Range(10f, 500f), // Generate random price for demo
+                        price_old = 0 // Default value
+                    };
+                    
+                    // Debug log for date validation in fallback mode
+                    if (showDebugLog)
+                    {
+                        Debug.Log($"[ShopManager] Item {profile.name} (fallback): " +
+                                 $"created_at={profile.created_at} ({DateTimeUtility.FormatDateTime(profile.created_at)}), " +
+                                 $"updated_at={profile.updated_at} ({DateTimeUtility.FormatDateTime(profile.updated_at)}), " +
+                                 $"price_current={profileData.price_current} (generated)");
+                    }
+                    
+                    newItemProfiles.Add(profileData);
+                }
+
+                currentShopItems = newItemProfiles;
+                
+                if (showDebugLog) Debug.Log($"[ShopManager] Successfully loaded and mapped {currentShopItems.Count} shop items (fallback mode) for shop {shopId}");
+                OnShopItemsChanged?.Invoke(currentShopItems);
+                onComplete?.Invoke(currentShopItems);
+            }
+            else
+            {
+                if (showDebugLog) Debug.LogWarning("[ShopManager] No shop items found in response.");
+                currentShopItems.Clear();
+                OnShopItemsChanged?.Invoke(currentShopItems);
+                onComplete?.Invoke(currentShopItems);
+            }
         }
+    }
+
+    private string ExtractShopIdFromEndpoint(string endpoint)
+    {
+        // Extract shop_id from endpoint like "/shops/{shopId}/item-profiles"
+        var parts = endpoint.Split('/');
+        for (int i = 0; i < parts.Length - 1; i++)
+        {
+            if (parts[i] == "shops" && i + 1 < parts.Length)
+            {
+                return parts[i + 1];
+            }
+        }
+        return "";
     }
 
     private IEnumerator GetShopListCoroutine(string endpoint, Action<List<ShopData>> onComplete)
@@ -315,5 +385,32 @@ public class ShopManager : SaiSingleton<ShopManager>
         selectedShopIdForEditor = shopId;
         itemProfileIdForEditor = itemProfileId;
         if (showDebugLog) Debug.Log($"[ShopManager] Selected Item Profile ID: {itemProfileId} from Shop ID: {shopId}");
+    }
+
+    /// <summary>
+    /// Test method để kiểm tra dữ liệu date trong current shop items
+    /// </summary>
+    [ContextMenu("Test Date Data")]
+    public void TestDateData()
+    {
+        Debug.Log($"[ShopManager] Testing date data for {currentShopItems.Count} items:");
+        
+        foreach (var item in currentShopItems)
+        {
+            Debug.Log($"[ShopManager] Item: {item.item_profile?.name ?? "Unknown"}");
+            Debug.Log($"  - ID: {item.id}");
+            Debug.Log($"  - Shop ID: {item.shop_id}");
+            Debug.Log($"  - Created At: {item.created_at} ({DateTimeUtility.FormatDateTime(item.created_at)})");
+            Debug.Log($"  - Updated At: {item.updated_at} ({DateTimeUtility.FormatDateTime(item.updated_at)})");
+            Debug.Log($"  - Price Current: {item.price_current}");
+            Debug.Log($"  - Price Old: {item.price_old}");
+            
+            if (item.item_profile != null)
+            {
+                Debug.Log($"  - Item Profile Created At: {item.item_profile.created_at} ({DateTimeUtility.FormatDateTime(item.item_profile.created_at)})");
+                Debug.Log($"  - Item Profile Updated At: {item.item_profile.updated_at} ({DateTimeUtility.FormatDateTime(item.item_profile.updated_at)})");
+            }
+            Debug.Log("  ---");
+        }
     }
 } 

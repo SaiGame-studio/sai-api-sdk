@@ -55,8 +55,6 @@ public class PlayerInventoryManager : SaiSingleton<PlayerInventoryManager>
             PlayerItemManager.Instance.OnPlayerItemsChanged += OnPlayerItemsUpdated;
             isEventRegistered = true;
             
-            if (showDebugLog) Debug.Log("[PlayerInventoryManager] Event registered with PlayerItemManager");
-            
             // Sync with existing data immediately if available
             if (PlayerItemManager.Instance.PlayerItems.Count > 0)
             {

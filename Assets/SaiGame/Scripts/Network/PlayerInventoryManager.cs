@@ -8,8 +8,6 @@ public class PlayerInventoryManager : SaiSingleton<PlayerInventoryManager>
 {
     [Header("Settings")]
     [SerializeField] protected bool showDebugLog = true;
-    [Tooltip("If enabled, Refresh will be automatically called when game authentication is successful")]
-    [SerializeField] protected bool autoLoad = true;
 
     [Header("Filtered Inventory Items (Type = Inventory)")]
     [SerializeField]
@@ -37,11 +35,6 @@ public class PlayerInventoryManager : SaiSingleton<PlayerInventoryManager>
 
     protected virtual void OnEnable()
     {
-        if (APIManager.Instance != null)
-        {
-            APIManager.Instance.OnAuthenticationSuccess += OnAuthenticationSuccess;
-        }
-        
         if (PlayerItemManager.Instance != null)
         {
             PlayerItemManager.Instance.OnPlayerItemsChanged += OnPlayerItemsUpdated;
@@ -55,23 +48,9 @@ public class PlayerInventoryManager : SaiSingleton<PlayerInventoryManager>
 
     protected virtual void OnDisable()
     {
-        if (APIManager.Instance != null)
-        {
-            APIManager.Instance.OnAuthenticationSuccess -= OnAuthenticationSuccess;
-        }
-        
         if (PlayerItemManager.Instance != null)
         {
             PlayerItemManager.Instance.OnPlayerItemsChanged -= OnPlayerItemsUpdated;
-        }
-    }
-
-    private void OnAuthenticationSuccess()
-    {
-        if (autoLoad && PlayerItemManager.Instance != null)
-        {
-            // Sync with existing data from PlayerItemManager
-            RefreshInventory();
         }
     }
 

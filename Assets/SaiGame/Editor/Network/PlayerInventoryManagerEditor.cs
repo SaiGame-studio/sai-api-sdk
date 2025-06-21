@@ -29,6 +29,18 @@ public class PlayerInventoryManagerEditor : Editor
             }
         }
 
+        if (GUILayout.Button("Refresh Player Items"))
+        {
+            if (PlayerItemManager.Instance != null)
+            {
+                PlayerItemManager.Instance.GetPlayerItems(null);
+            }
+            else
+            {
+                Debug.LogWarning("PlayerItemManager instance not found!");
+            }
+        }
+
         if (GUILayout.Button("Refresh Inventory"))
         {
             inventoryManager.RefreshInventory();

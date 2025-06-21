@@ -2775,7 +2775,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2988844402389260222, guid: 45192b4401665724fbbd74ca57cd25ed, type: 3}
       propertyPath: autoLoad
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2988844402389260222, guid: 45192b4401665724fbbd74ca57cd25ed, type: 3}
       propertyPath: OnPlayerItemsLoadSuccessUnity.m_PersistentCalls.m_Calls.Array.size

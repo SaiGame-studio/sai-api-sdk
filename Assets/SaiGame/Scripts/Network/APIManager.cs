@@ -719,6 +719,24 @@ public class APIManager : SaiSingleton<APIManager>
     }
 
     /// <summary>
+    /// Lấy danh sách items trong một inventory cụ thể
+    /// </summary>
+    /// <param name="inventoryId">ID của inventory</param>
+    /// <param name="onComplete">Callback khi hoàn thành</param>
+    public void GetInventoryItems(string inventoryId, Action<InventoryItemsResponse> onComplete)
+    {
+        if (string.IsNullOrEmpty(inventoryId))
+        {
+            Debug.LogError("Inventory ID cannot be null or empty");
+            onComplete?.Invoke(new InventoryItemsResponse());
+            return;
+        }
+
+        string endpoint = $"/inventories/{inventoryId}/items";
+        StartCoroutine(GetRequest<InventoryItemsResponse>(endpoint, onComplete));
+    }
+
+    /// <summary>
     /// Trigger authentication success event from outside the class
     /// </summary>
     public void TriggerAuthenticationSuccess()

@@ -6,6 +6,7 @@ public class PlayerInventoryManagerEditor : Editor
 {
     private int selectedInventoryIndex = -1;
     private Vector2 inventoryItemsScrollPosition;
+    private Vector2 inventoryContentsScrollPosition;
     private string lastSelectedItemId = null;
 
     public override void OnInspectorGUI()
@@ -68,8 +69,8 @@ public class PlayerInventoryManagerEditor : Editor
                 }
             }
 
-            // Hiển thị danh sách inventory items
-            EditorGUILayout.LabelField("Current Inventory Items", EditorStyles.boldLabel);
+            // Hiển thị danh sách inventory items (containers)
+            EditorGUILayout.LabelField("Available Inventories", EditorStyles.boldLabel);
             if (inventoryManager.FilteredInventoryItems != null && inventoryManager.FilteredInventoryItems.Count > 0)
             {
                 // Thông tin tổng quan
@@ -110,11 +111,11 @@ public class PlayerInventoryManagerEditor : Editor
                 }
                 EditorGUILayout.EndScrollView();
 
-                // Hiển thị thông tin chi tiết của item được chọn
+                // Hiển thị thông tin chi tiết của inventory được chọn
                 if (selectedInventoryIndex >= 0 && selectedInventoryIndex < inventoryManager.FilteredInventoryItems.Count)
                 {
                     EditorGUILayout.Space(10);
-                    EditorGUILayout.LabelField("Selected Item Details", EditorStyles.boldLabel);
+                    EditorGUILayout.LabelField("Selected Inventory Details", EditorStyles.boldLabel);
                     var selectedItem = inventoryManager.FilteredInventoryItems[selectedInventoryIndex];
                     
                     EditorGUILayout.BeginVertical("box");
@@ -131,6 +132,83 @@ public class PlayerInventoryManagerEditor : Editor
             else
             {
                 EditorGUILayout.HelpBox("No Inventory Items", MessageType.Info);
+            }
+
+            // Hiển thị nội dung bên trong inventory được chọn
+            EditorGUILayout.Space(15);
+            EditorGUILayout.LabelField("Items Inside Selected Inventory", EditorStyles.boldLabel);
+
+            if (inventoryManager.IsLoadingInventoryItems())
+            {
+                EditorGUILayout.HelpBox("Loading inventory items...", MessageType.Info);
+            }
+            else if (!string.IsNullOrEmpty(inventoryManager.GetSelectedInventoryId()))
+            {
+                // Hiển thị thông tin inventory được chọn
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField($"Selected Inventory: {inventoryManager.GetSelectedInventoryName()}", GUILayout.Width(300));
+                EditorGUILayout.LabelField($"ID: {inventoryManager.GetSelectedInventoryId()}", GUILayout.Width(200));
+                EditorGUILayout.EndHorizontal();
+
+                // Button để refresh inventory items
+                if (GUILayout.Button("Refresh Inventory Items"))
+                {
+                    inventoryManager.LoadInventoryItems(inventoryManager.GetSelectedInventoryId());
+                }
+
+                // Hiển thị danh sách items trong inventory
+                if (inventoryManager.InventoryItems != null && inventoryManager.InventoryItems.Count > 0)
+                {
+                    EditorGUILayout.Space(5);
+                    EditorGUILayout.LabelField($"Total Items in Inventory: {inventoryManager.InventoryItems.Count}", EditorStyles.miniLabel);
+
+                    inventoryContentsScrollPosition = EditorGUILayout.BeginScrollView(inventoryContentsScrollPosition, GUILayout.Height(200));
+                    
+                    foreach (var item in inventoryManager.InventoryItems)
+                    {
+                        EditorGUILayout.BeginVertical("box");
+                        
+                        EditorGUILayout.BeginHorizontal();
+                        EditorGUILayout.LabelField($"Name: {item.name}", GUILayout.Width(200));
+                        EditorGUILayout.LabelField($"Amount: {item.amount}", GUILayout.Width(100));
+                        EditorGUILayout.LabelField($"Type: {item.type}", GUILayout.Width(100));
+                        EditorGUILayout.EndHorizontal();
+
+                        if (!string.IsNullOrEmpty(item.description))
+                        {
+                            EditorGUILayout.LabelField($"Description: {item.description}", EditorStyles.wordWrappedMiniLabel);
+                        }
+
+                        // Hiển thị custom_data nếu có
+                        if (item.custom_data != null)
+                        {
+                            EditorGUILayout.BeginHorizontal();
+                            EditorGUILayout.LabelField($"HP: {item.custom_data.hp_current}/{item.custom_data.hp_max}", GUILayout.Width(150));
+                            EditorGUILayout.EndHorizontal();
+                        }
+
+                        EditorGUILayout.BeginHorizontal();
+                        EditorGUILayout.LabelField($"Stack Limit: {item.stack_limit}", GUILayout.Width(120));
+                        EditorGUILayout.LabelField($"Level Max: {item.level_max}", GUILayout.Width(120));
+                        EditorGUILayout.LabelField($"Stackable: {(item.stackable == 1 ? "Yes" : "No")}", GUILayout.Width(100));
+                        EditorGUILayout.EndHorizontal();
+
+                        EditorGUILayout.LabelField($"ID: {item.id}", EditorStyles.miniLabel);
+                        
+                        EditorGUILayout.EndVertical();
+                        EditorGUILayout.Space(2);
+                    }
+                    
+                    EditorGUILayout.EndScrollView();
+                }
+                else
+                {
+                    EditorGUILayout.HelpBox("No items found in this inventory or inventory is empty.", MessageType.Info);
+                }
+            }
+            else
+            {
+                EditorGUILayout.HelpBox("Select an inventory to view its contents.", MessageType.Info);
             }
         }
         else

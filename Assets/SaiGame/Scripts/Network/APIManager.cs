@@ -319,6 +319,8 @@ public class APIManager : SaiSingleton<APIManager>
             {
                 // Lưu token với thông tin expire
                 SetAuthTokenWithExpire(response.token, response.expires_at, response.expires_in);
+                if (showDebugLog) Debug.Log("Login successful, triggering OnAuthenticationSuccess event");
+                OnAuthenticationSuccess?.Invoke();
             }
             onComplete?.Invoke(response);
         }));
@@ -362,6 +364,8 @@ public class APIManager : SaiSingleton<APIManager>
             {
                 // Lưu token với thông tin expire
                 SetAuthTokenWithExpire(response.token, response.expires_at, response.expires_in);
+                if (showDebugLog) Debug.Log("Register successful, triggering OnAuthenticationSuccess event");
+                OnAuthenticationSuccess?.Invoke();
             }
             onComplete?.Invoke(response);
         }));
@@ -712,5 +716,32 @@ public class APIManager : SaiSingleton<APIManager>
     {
         string endpoint = $"/games/{gameId}/register/profiles";
         StartCoroutine(PostRequest<UserProfileResponse>(endpoint, null, onComplete));
+    }
+
+    /// <summary>
+    /// Lấy danh sách items trong một inventory cụ thể
+    /// </summary>
+    /// <param name="inventoryId">ID của inventory</param>
+    /// <param name="onComplete">Callback khi hoàn thành</param>
+    public void GetInventoryItems(string inventoryId, Action<InventoryItemsResponse> onComplete)
+    {
+        if (string.IsNullOrEmpty(inventoryId))
+        {
+            Debug.LogError("Inventory ID cannot be null or empty");
+            onComplete?.Invoke(new InventoryItemsResponse());
+            return;
+        }
+
+        string endpoint = $"/inventories/{inventoryId}/items";
+        StartCoroutine(GetRequest<InventoryItemsResponse>(endpoint, onComplete));
+    }
+
+    /// <summary>
+    /// Trigger authentication success event from outside the class
+    /// </summary>
+    public void TriggerAuthenticationSuccess()
+    {
+        if (showDebugLog) Debug.Log("Triggering OnAuthenticationSuccess event");
+        OnAuthenticationSuccess?.Invoke();
     }
 }

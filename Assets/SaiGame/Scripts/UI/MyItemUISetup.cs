@@ -228,10 +228,10 @@ public class MyItemUISetup : MonoBehaviour
         // Create title
         titleText = CreateText("TitleText", "My Items", mainPanel.transform, 48).GetComponent<TextMeshProUGUI>();
         titleText.color = Color.white;
-        titleText.alignment = TextAlignmentOptions.Right;
+        titleText.alignment = TextAlignmentOptions.Left;
         RectTransform titleRect = titleText.GetComponent<RectTransform>();
-        titleRect.anchorMin = new Vector2(0.7f, 0.9f);
-        titleRect.anchorMax = new Vector2(0.95f, 0.98f);
+        titleRect.anchorMin = new Vector2(0.05f, 0.9f);
+        titleRect.anchorMax = new Vector2(0.4f, 0.98f);
         titleRect.offsetMin = Vector2.zero;
         titleRect.offsetMax = Vector2.zero;
 
@@ -309,8 +309,8 @@ public class MyItemUISetup : MonoBehaviour
         backRect.anchorMin = new Vector2(0, 1);
         backRect.anchorMax = new Vector2(0, 1);
         backRect.pivot = new Vector2(0, 1);
-        // Position at top-left
-        backRect.anchoredPosition = new Vector2(20, -20);
+        // Position to the right of title with some spacing
+        backRect.anchoredPosition = new Vector2(450, -20);
         backRect.sizeDelta = new Vector2(150, 80);
 
         // Create Shops button (positioned to the right of Main Menu)
@@ -336,11 +336,11 @@ public class MyItemUISetup : MonoBehaviour
         shopsRect.anchorMin = new Vector2(0, 1);
         shopsRect.anchorMax = new Vector2(0, 1);
         shopsRect.pivot = new Vector2(0, 1);
-        // Position next to the main menu button: main menu button pos x (20) + main menu button width (150) + spacing (10)
-        shopsRect.anchoredPosition = new Vector2(180, -20);
+        // Position next to the main menu button: main menu button pos x (450) + main menu button width (150) + spacing (10)
+        shopsRect.anchoredPosition = new Vector2(610, -20);
         shopsRect.sizeDelta = new Vector2(120, 80);
 
-        // Create Refresh button and position it to the right of the Shops button
+        // Create Refresh button and position it at top-right corner
         refreshButton = CreateButton("RefreshButton", "Refresh", mainPanel.transform);
         
         // Center the text in the refresh button
@@ -363,11 +363,11 @@ public class MyItemUISetup : MonoBehaviour
         refreshButton.colors = cb;
 
         RectTransform refreshRect = refreshButton.GetComponent<RectTransform>();
-        refreshRect.anchorMin = new Vector2(0, 1);
-        refreshRect.anchorMax = new Vector2(0, 1);
-        refreshRect.pivot = new Vector2(0, 1);
-        // Position next to the shops button: shops button pos x (180) + shops button width (120) + spacing (10)
-        refreshRect.anchoredPosition = new Vector2(310, -20); 
+        refreshRect.anchorMin = new Vector2(1, 1);
+        refreshRect.anchorMax = new Vector2(1, 1);
+        refreshRect.pivot = new Vector2(1, 1);
+        // Position at top-right corner
+        refreshRect.anchoredPosition = new Vector2(-20, -20); 
         refreshRect.sizeDelta = new Vector2(120, 80);
         
         // Create status text
@@ -492,6 +492,12 @@ public class MyItemUISetup : MonoBehaviour
     {
         ClearItems();
 
+        if (itemPrefab == null)
+        {
+            Debug.LogError("[MyItemUISetup] Item prefab is null. Cannot populate items.");
+            return;
+        }
+
         foreach (var item in items)
         {
             GameObject itemObj = Instantiate(itemPrefab, itemContainer);
@@ -515,10 +521,25 @@ public class MyItemUISetup : MonoBehaviour
 
     private void ClearItems()
     {
-        foreach (var item in itemObjects)
+        if (itemContainer != null)
         {
-            if (item != null)
-                DestroyImmediate(item);
+            // Iterate backwards to safely remove children
+            for (int i = itemContainer.childCount - 1; i >= 0; i--)
+            {
+                Transform child = itemContainer.GetChild(i);
+                if (child != null && child.gameObject != null)
+                {
+                    // Use DestroyImmediate in the editor when not playing, otherwise use Destroy
+                    if (Application.isEditor && !Application.isPlaying)
+                    {
+                        DestroyImmediate(child.gameObject);
+                    }
+                    else
+                    {
+                        Destroy(child.gameObject);
+                    }
+                }
+            }
         }
         itemObjects.Clear();
     }

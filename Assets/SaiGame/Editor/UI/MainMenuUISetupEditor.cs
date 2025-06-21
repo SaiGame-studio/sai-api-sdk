@@ -99,7 +99,7 @@ public class MainMenuUISetupEditor : Editor
                 GUI.backgroundColor = new Color(0.8f, 0.4f, 0.8f, 1f); // Tím
                 if (GUILayout.Button("Go to My Character", GUILayout.Height(25)))
                 {
-                    mainMenuUISetup.OnMyCharacterClick();
+                    mainMenuUISetup.OnMyInventoryClick();
                 }
                 GUI.backgroundColor = Color.white;
             }

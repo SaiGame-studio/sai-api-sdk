@@ -74,6 +74,12 @@ public class LoginManager : SaiBehaviour
             // Log thông tin token để debug
             long remainingSeconds = tokenInfo.GetRemainingSeconds();
             
+            // Trigger authentication success event for auto-login
+            if (APIManager.Instance != null)
+            {
+                APIManager.Instance.TriggerAuthenticationSuccess();
+            }
+            
             LoadGameScene();
         }
         else

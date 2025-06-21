@@ -12,14 +12,14 @@ public class MainMenuUISetup : SaiBehaviour
     [Header("UI References")]
     public Button shopButton;
     public Button myItemsButton;
-    public Button myCharacterButton;
+    public Button myInventoryButton;
     public Button logoutButton;
     public TextMeshProUGUI welcomeText;
     
     [Header("Scene Names")]
     public string shopSceneName = SceneNames.SHOP;
     public string myItemsSceneName = SceneNames.MY_ITEMS;
-    public string myCharacterSceneName = SceneNames.MY_CHARACTER;
+    public string myInventorySceneName = SceneNames.MY_INVENTORY;
     
     protected override void Start()
     {
@@ -74,7 +74,7 @@ public class MainMenuUISetup : SaiBehaviour
         // Reset references
         shopButton = null;
         myItemsButton = null;
-        myCharacterButton = null;
+        myInventoryButton = null;
         logoutButton = null;
         welcomeText = null;
     }
@@ -150,17 +150,17 @@ public class MainMenuUISetup : SaiBehaviour
         if (myItemsText != null)
             myItemsText.fontSize = 36; // Tăng font size
         
-        // Create My Character Button - Lớn hơn nữa
-        GameObject myCharacterBtn = CreateButton("MyCharacterButton", "MY CHARACTER", mainPanel.transform);
-        RectTransform myCharacterRect = myCharacterBtn.GetComponent<RectTransform>();
-        myCharacterRect.anchoredPosition = new Vector2(0, -100); // Điều chỉnh vị trí
-        myCharacterRect.sizeDelta = new Vector2(400, 100); // Tăng kích thước lớn hơn nữa
-        myCharacterButton = myCharacterBtn.GetComponent<Button>();
+        // Create My Inventory Button - Lớn hơn nữa
+        GameObject myInventoryBtn = CreateButton("MyInventoryButton", "MY INVENTORY", mainPanel.transform);
+        RectTransform myInventoryRect = myInventoryBtn.GetComponent<RectTransform>();
+        myInventoryRect.anchoredPosition = new Vector2(0, -100); // Điều chỉnh vị trí
+        myInventoryRect.sizeDelta = new Vector2(400, 100); // Tăng kích thước lớn hơn nữa
+        myInventoryButton = myInventoryBtn.GetComponent<Button>();
         
-        // Set font size cho my character button text
-        TextMeshProUGUI myCharacterText = myCharacterBtn.GetComponentInChildren<TextMeshProUGUI>();
-        if (myCharacterText != null)
-            myCharacterText.fontSize = 36; // Tăng font size
+        // Set font size cho my inventory button text
+        TextMeshProUGUI myInventoryText = myInventoryBtn.GetComponentInChildren<TextMeshProUGUI>();
+        if (myInventoryText != null)
+            myInventoryText.fontSize = 36; // Tăng font size
         
         // Create Logout Button - Lớn hơn nữa
         GameObject logoutBtn = CreateButton("LogoutButton", "LOGOUT", mainPanel.transform);
@@ -183,7 +183,7 @@ public class MainMenuUISetup : SaiBehaviour
         mainMenuSetup.autoSetup = false;
         mainMenuSetup.shopButton = shopButton;
         mainMenuSetup.myItemsButton = myItemsButton;
-        mainMenuSetup.myCharacterButton = myCharacterButton;
+        mainMenuSetup.myInventoryButton = myInventoryButton;
         mainMenuSetup.logoutButton = logoutButton;
         mainMenuSetup.welcomeText = welcomeText;
         
@@ -207,8 +207,8 @@ public class MainMenuUISetup : SaiBehaviour
         if (myItemsButton != null)
             myItemsButton.onClick.AddListener(OnMyItemsClick);
             
-        if (myCharacterButton != null)
-            myCharacterButton.onClick.AddListener(OnMyCharacterClick);
+        if (myInventoryButton != null)
+            myInventoryButton.onClick.AddListener(OnMyInventoryClick);
             
         if (logoutButton != null)
             logoutButton.onClick.AddListener(OnLogoutClick);
@@ -241,9 +241,9 @@ public class MainMenuUISetup : SaiBehaviour
         SceneManager.LoadScene(myItemsSceneName);
     }
     
-    public void OnMyCharacterClick()
+    public void OnMyInventoryClick()
     {
-        SceneManager.LoadScene(myCharacterSceneName);
+        SceneManager.LoadScene(myInventorySceneName);
     }
     
     public void OnLogoutClick()

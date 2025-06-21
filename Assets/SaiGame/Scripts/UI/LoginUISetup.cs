@@ -668,15 +668,12 @@ public class LoginUISetup : MonoBehaviour
         {
             hasTriedToFindAPIManager = true;
             
-            Debug.Log("[LoginUISetup] APIManager not linked. Attempting to find APIManager in scene...");
-            
             // Tìm APIManager trong scene
             APIManager foundAPIManager = FindFirstObjectByType<APIManager>();
             
             if (foundAPIManager != null)
             {
                 apiManager = foundAPIManager;
-                Debug.Log("[LoginUISetup] Successfully found and linked APIManager!");
             }
             else
             {

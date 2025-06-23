@@ -26,6 +26,10 @@ public class PlayerInventoryManager : SaiSingleton<PlayerInventoryManager>
 
     public event Action<List<InventoryItem>> OnFilteredInventoryItemsChanged;
     public event Action<List<InventoryItem>> OnInventoryItemsChanged;
+    
+    // Event mới để thông báo khi inventory được chọn từ dropdown
+    // UI sẽ đăng ký event này để tự động cập nhật Grid Items
+    public event Action<InventoryItem> OnInventorySelectedFromDropdown;
 
     // Editor-only field
     public string selectedItemIdForEditor = null;
@@ -151,7 +155,11 @@ public class PlayerInventoryManager : SaiSingleton<PlayerInventoryManager>
             selectedInventoryId = selectedInventory.id;
             selectedInventoryName = selectedInventory.name;
             
-            if (showDebugLog) Debug.Log($"Selected Inventory: {selectedInventoryName} (ID: {selectedInventoryId})");
+            if (showDebugLog) Debug.Log($"[PlayerInventoryManager] Dropdown Selection: {selectedInventoryName} (ID: {selectedInventoryId})");
+            
+            // Fire event cho UI (không gọi trực tiếp UI code)
+            // UI sẽ tự đăng ký event này để nhận thông báo
+            OnInventorySelectedFromDropdown?.Invoke(selectedInventory);
             
             // Gọi API để lấy items trong inventory này
             LoadInventoryItems(selectedInventoryId);
@@ -160,6 +168,30 @@ public class PlayerInventoryManager : SaiSingleton<PlayerInventoryManager>
         {
             if (showDebugLog) Debug.LogWarning($"Could not find inventory with ID: {itemId}");
         }
+    }
+
+    /// <summary>
+    /// Method để chọn inventory theo object (không chỉ qua dropdown Editor)
+    /// Dùng để test hoặc chọn programmatically
+    /// </summary>
+    /// <param name="inventory">Inventory object để chọn</param>
+    public void SelectInventory(InventoryItem inventory)
+    {
+        if (inventory == null)
+        {
+            if (showDebugLog) Debug.LogWarning("[PlayerInventoryManager] Cannot select null inventory");
+            return;
+        }
+
+        selectedInventoryId = inventory.id;
+        selectedInventoryName = inventory.name;
+        selectedItemIdForEditor = inventory.id;
+        
+        // Fire event cho UI
+        OnInventorySelectedFromDropdown?.Invoke(inventory);
+        
+        // Load items trong inventory này
+        LoadInventoryItems(selectedInventoryId);
     }
 
     /// <summary>
@@ -184,8 +216,6 @@ public class PlayerInventoryManager : SaiSingleton<PlayerInventoryManager>
         inventoryItems.Clear();
         OnInventoryItemsChanged?.Invoke(inventoryItems);
 
-        if (showDebugLog) Debug.Log($"Loading items for inventory: {inventoryId}");
-
         APIManager.Instance.GetInventoryItems(inventoryId, OnInventoryItemsLoaded);
     }
 
@@ -200,17 +230,6 @@ public class PlayerInventoryManager : SaiSingleton<PlayerInventoryManager>
         if (response != null && response.data != null)
         {
             inventoryItems = response.data;
-            
-            if (showDebugLog) 
-            {
-                Debug.Log($"Loaded {inventoryItems.Count} items for inventory '{selectedInventoryName}'");
-                
-                // Log chi tiết từng item để debug
-                foreach (var item in inventoryItems)
-                {
-                    Debug.Log($"- {item.name} (x{item.amount}) - Type: {item.type}");
-                }
-            }
         }
         else
         {
@@ -261,5 +280,48 @@ public class PlayerInventoryManager : SaiSingleton<PlayerInventoryManager>
     public int GetUniqueItemCount()
     {
         return filteredInventoryItems.Count;
+    }
+
+    /// <summary>
+    /// Context menu method để test dropdown selection event
+    /// </summary>
+    [ContextMenu("Test Dropdown Selection Event")]
+    public void TestDropdownSelectionEvent()
+    {
+        if (filteredInventoryItems.Count > 0)
+        {
+            // Chọn inventory đầu tiên để test
+            var testInventory = filteredInventoryItems[0];
+            Debug.Log($"[PlayerInventoryManager] Testing dropdown selection for: {testInventory.name}");
+            
+            // Fire event như khi user chọn từ dropdown
+            OnInventorySelectedFromDropdown?.Invoke(testInventory);
+            LoadInventoryItems(testInventory.id);
+        }
+        else
+        {
+            Debug.LogWarning("[PlayerInventoryManager] No inventories available to test dropdown selection");
+        }
+    }
+
+    /// <summary>
+    /// Context menu method để test với dummy inventory
+    /// </summary>
+    [ContextMenu("Test Dropdown with Dummy Inventory")]
+    public void TestDropdownWithDummyInventory()
+    {
+        // Tạo dummy inventory để test
+        InventoryItem dummyInventory = new InventoryItem
+        {
+            id = "test_dropdown_inventory",
+            name = "Test Dropdown Inventory",
+            type = "Inventory",
+            amount = 5
+        };
+
+        Debug.Log($"[PlayerInventoryManager] Testing dropdown selection with dummy inventory: {dummyInventory.name}");
+        
+        // Simulate dropdown selection
+        SelectInventory(dummyInventory);
     }
 } 

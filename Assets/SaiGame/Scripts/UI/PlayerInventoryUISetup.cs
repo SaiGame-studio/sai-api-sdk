@@ -56,50 +56,94 @@ public class PlayerInventoryUISetup : MonoBehaviour
     void Awake()
     {
         // Khi play game thì ẩn dummy data đi bằng cách xóa các item con
+        // Tương tự như ShopUISetup
         if (Application.isPlaying)
         {
-            // Xóa các items trong inventory selection
+            
+            // Tắt showDummyData khi ở Play mode để tránh load dummy data sau này
+            showDummyData = false;
+            
+            int clearedInventorySelection = 0;
+            int clearedInventoryItems = 0;
+            
+            // Xóa các items trong inventory selection (Left panel)
             if (inventorySelectionContainer != null)
             {
+                clearedInventorySelection = inventorySelectionContainer.childCount;
+                // Sử dụng DestroyImmediate để đảm bảo xóa ngay lập tức
+                List<Transform> childrenToDestroy = new List<Transform>();
                 foreach (Transform child in inventorySelectionContainer)
                 {
-                    Destroy(child.gameObject);
+                    childrenToDestroy.Add(child);
+                }
+                foreach (Transform child in childrenToDestroy)
+                {
+                    DestroyImmediate(child.gameObject);
                 }
             }
             if (inventorySelectionItems != null) inventorySelectionItems.Clear();
 
-            // Xóa các items trong inventory
+            // Xóa các Grid Items trong inventory (Right panel)
             if (inventoryItemContainer != null)
             {
+                clearedInventoryItems = inventoryItemContainer.childCount;
+                // Sử dụng DestroyImmediate để đảm bảo xóa ngay lập tức
+                List<Transform> childrenToDestroy = new List<Transform>();
                 foreach (Transform child in inventoryItemContainer)
                 {
-                    Destroy(child.gameObject);
+                    childrenToDestroy.Add(child);
+                }
+                foreach (Transform child in childrenToDestroy)
+                {
+                    DestroyImmediate(child.gameObject);
                 }
             }
             if (inventoryItems != null) inventoryItems.Clear();
+            
+            // Reset selected inventory
+            selectedInventory = null;
+            
+            Debug.Log($"[PlayerInventoryUISetup] Dummy data cleared: {clearedInventorySelection} inventory selection items, {clearedInventoryItems} Grid Items");
+        }
+        else
+        {
+            Debug.Log("[PlayerInventoryUISetup] Editor mode - keeping dummy data for preview");
         }
     }
 
     void Start()
     {
+        // Tự động tìm và liên kết APIManager
         if (apiManager == null)
             apiManager = APIManager.Instance;
 
+        // Auto setup UI nếu được bật
+        if (autoSetup)
+        {
+            CreateInventoryUI();
+            Debug.Log("[PlayerInventoryUISetup] Auto setup enabled - UI created");
+        }
+
         SetupEventListeners();
+        
+        // Delay một frame để đảm bảo tất cả components đã được khởi tạo
         StartCoroutine(DelayedLoadInventoryData());
     }
 
     private void OnValidate()
     {
-        // Tạo dummy data khi ở Editor mode và không play game
-        if (showDummyData && !Application.isPlaying && Application.isEditor)
+        // Tạo UI và dummy data khi ở Editor mode và không play game
+        // Và chỉ khi showDummyData = true
+        if (showDummyData && !Application.isPlaying && autoSetup && Application.isEditor)
         {
+            CreateInventoryUI();
             LoadDummyDataSafe(true);
         }
     }
 
     private void SetupEventListeners()
     {
+        // Setup UI button listeners
         if (refreshButton != null)
             refreshButton.onClick.AddListener(OnRefreshClick);
         
@@ -108,6 +152,14 @@ public class PlayerInventoryUISetup : MonoBehaviour
         
         if (useItemButton != null)
             useItemButton.onClick.AddListener(OnUseItemClick);
+
+        // Setup PlayerInventoryManager event listeners
+        // Đăng ký event để lắng nghe khi inventory được chọn từ dropdown
+        if (PlayerInventoryManager.Instance != null)
+        {
+            PlayerInventoryManager.Instance.OnInventorySelectedFromDropdown += OnInventorySelectedFromDropdown;
+            Debug.Log("[PlayerInventoryUISetup] Registered for OnInventorySelectedFromDropdown event");
+        }
     }
 
     private IEnumerator DelayedLoadInventoryData()
@@ -121,9 +173,17 @@ public class PlayerInventoryUISetup : MonoBehaviour
         else
         {
             ShowStatus("Waiting for authentication...");
-            if (showDummyData && Application.isEditor)
+            
+            // Chỉ load dummy data trong Editor mode và không phải Play mode
+            // Và chỉ khi showDummyData = true (đã được set false trong Play mode)
+            if (showDummyData && Application.isEditor && !Application.isPlaying)
             {
                 LoadDummyData();
+                Debug.Log("[PlayerInventoryUISetup] Loading dummy data in Editor mode (not playing)");
+            }
+            else
+            {
+                Debug.Log("[PlayerInventoryUISetup] Dummy data disabled - waiting for real authentication in Play mode");
             }
         }
     }
@@ -181,7 +241,7 @@ public class PlayerInventoryUISetup : MonoBehaviour
                 Button button = item.GetComponent<Button>();
                 if (button != null)
                 {
-                    button.onClick.AddListener(() => OnInventorySelected(inventory));
+                    button.onClick.AddListener(() => OnInventoryButtonClicked(inventory));
                 }
                 
                 inventorySelectionItems.Add(item);
@@ -209,91 +269,275 @@ public class PlayerInventoryUISetup : MonoBehaviour
         }
     }
 
-    private void OnInventorySelected(InventoryItem inventory)
+    /// <summary>
+    /// Event handler cho dropdown selection từ PlayerInventoryManager
+    /// Method này được gọi khi user chọn inventory từ dropdown hoặc bấm button
+    /// </summary>
+    /// <param name="inventory">Inventory được chọn từ dropdown</param>
+    private void OnInventorySelectedFromDropdown(InventoryItem inventory)
     {
-        selectedInventory = inventory;
-        ShowStatus($"Selected: {inventory.name}");
-        
-        if (PlayerInventoryManager.Instance != null)
+        if (inventory == null)
         {
-            PlayerInventoryManager.Instance.OnInventoryItemsChanged += OnInventoryItemsLoaded;
-            PlayerInventoryManager.Instance.LoadInventoryItems(inventory.id);
+            ShowStatus("Invalid inventory selected from dropdown");
+            return;
         }
-    }
 
-    private void OnInventoryItemsLoaded(List<InventoryItem> items)
-    {
+        // Cập nhật selectedInventory để đồng bộ với PlayerInventoryManager
+        selectedInventory = inventory;
+        ShowStatus($"Loading items from '{inventory.name}' (via dropdown)...");
+        ShowLoading(true);
+        
+        // Clear current Grid Items before loading new ones
+        ClearInventoryItems();
+        
+        // Unsubscribe from previous events to prevent multiple subscriptions
         if (PlayerInventoryManager.Instance != null)
         {
             PlayerInventoryManager.Instance.OnInventoryItemsChanged -= OnInventoryItemsLoaded;
         }
         
-        if (items != null && items.Count > 0)
+        // Subscribe to inventory items loaded event
+        if (PlayerInventoryManager.Instance != null)
         {
-            ShowStatus($"Loaded {items.Count} items");
-            PopulateInventoryItems(items);
+            PlayerInventoryManager.Instance.OnInventoryItemsChanged += OnInventoryItemsLoaded;
         }
         else
         {
-            ShowStatus("No items in inventory");
-            ClearInventoryItems();
+            ShowLoading(false);
+            ShowStatus("PlayerInventoryManager not found!");
         }
     }
 
-    private void PopulateInventoryItems(List<InventoryItem> items)
+    /// <summary>
+    /// Handler cho việc bấm vào Button của Inventory trong Grid
+    /// Thay vì load items trực tiếp, nó sẽ thay đổi selection trong PlayerInventoryManager
+    /// </summary>
+    /// <param name="inventory">Inventory được chọn</param>
+    private void OnInventoryButtonClicked(InventoryItem inventory)
     {
-        ClearInventoryItems();
+        if (inventory == null)
+        {
+            ShowStatus("Invalid inventory selected");
+            return;
+        }
+
+        // Gọi PlayerInventoryManager để thay đổi selection
+        // Điều này sẽ trigger dropdown selection và tự động load items
+        if (PlayerInventoryManager.Instance != null)
+        {
+            PlayerInventoryManager.Instance.SelectInventory(inventory);
+        }
+        else
+        {
+            ShowStatus("PlayerInventoryManager not found!");
+            Debug.LogError("[PlayerInventoryUISetup] PlayerInventoryManager.Instance is null!");
+        }
+    }
+
+    private void OnInventoryItemsLoaded(List<InventoryItem> items)
+    {
+        ShowLoading(false); // Hide loading panel
         
+        // Unsubscribe from event to prevent memory leaks
+        if (PlayerInventoryManager.Instance != null)
+        {
+            PlayerInventoryManager.Instance.OnInventoryItemsChanged -= OnInventoryItemsLoaded;
+        }
+        
+        // Get inventory name once to avoid scope conflicts
+        string currentInventoryName = selectedInventory?.name ?? "Selected Inventory";
+        
+        // Display ALL items from the selected inventory
+        if (items != null && items.Count > 0)
+        {
+            ShowStatus($"Displaying ALL {items.Count} items from '{currentInventoryName}'");
+            
+            // Populate Grid with ALL items
+            PopulateAllInventoryItems(items);
+            
+            // Debug log để xác nhận tất cả items được hiển thị
+            Debug.Log($"[PlayerInventoryUISetup] SUCCESS: Displayed ALL {items.Count} items from inventory '{currentInventoryName}' on Grid Items");
+            
+            // Log chi tiết từng item để debug
+            for (int i = 0; i < items.Count; i++)
+            {
+                var item = items[i];
+                Debug.Log($"  Item {i+1}: {item.name} (Amount: {item.amount}, Type: {item.type})");
+            }
+        }
+        else
+        {
+            ShowStatus($"No items found in '{currentInventoryName}'");
+            ClearInventoryItems();
+            Debug.Log($"[PlayerInventoryUISetup] No items found in inventory '{currentInventoryName}'");
+        }
+    }
+
+    /// <summary>
+    /// Hiển thị TẤT CẢ items từ inventory đã chọn lên Grid Items
+    /// Method này được gọi khi user bấm vào Button Inventory
+    /// </summary>
+    private void PopulateAllInventoryItems(List<InventoryItem> items)
+    {
+        // Clear existing items trước khi populate mới
+        ClearInventoryItems();
+
+        // Get inventory name to avoid scope conflicts
+        string selectedInventoryName = selectedInventory?.name ?? "Selected Inventory";
+
+        if (items == null || items.Count == 0)
+        {
+            ShowStatus($"No items found in '{selectedInventoryName}'");
+            Debug.Log($"[PlayerInventoryUISetup] PopulateAllInventoryItems: No items to display for '{selectedInventoryName}'");
+            return;
+        }
+
+        if (inventoryItemPrefab == null)
+        {
+            ShowStatus("Error: Inventory item prefab not found!");
+            Debug.LogError("[PlayerInventoryUISetup] inventoryItemPrefab is null!");
+            return;
+        }
+
+        if (inventoryItemContainer == null)
+        {
+            ShowStatus("Error: Inventory item container not found!");
+            Debug.LogError("[PlayerInventoryUISetup] inventoryItemContainer is null!");
+            return;
+        }
+
+        // Hiển thị TẤT CẢ items lên Grid
+        int itemCount = 0;
         foreach (var item in items)
         {
-            if (inventoryItemPrefab != null && inventoryItemContainer != null)
+            try
             {
                 GameObject itemObj = Instantiate(inventoryItemPrefab, inventoryItemContainer);
                 itemObj.SetActive(true);
                 
+                // Set data cho Grid Item
                 SetInventoryItemData(itemObj, item);
                 
+                // Add click event cho Grid Item
                 Button button = itemObj.GetComponent<Button>();
                 if (button != null)
                 {
-                    button.onClick.AddListener(() => OnItemSelected(item));
+                    button.onClick.AddListener(() => OnGridItemSelected(item));
                 }
                 
                 inventoryItems.Add(itemObj);
+                itemCount++;
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[PlayerInventoryUISetup] Error creating Grid Item for {item.name}: {ex.Message}");
             }
         }
+        
+        ShowStatus($"Displaying ALL {itemCount} items from '{selectedInventoryName}'");
+        Debug.Log($"[PlayerInventoryUISetup] PopulateAllInventoryItems: Successfully created {itemCount} Grid Items for '{selectedInventoryName}'");
+    }
+
+    /// <summary>
+    /// Backward compatibility - redirect to PopulateAllInventoryItems
+    /// </summary>
+    private void PopulateInventoryItems(List<InventoryItem> items)
+    {
+        PopulateAllInventoryItems(items);
     }
 
     private void SetInventoryItemData(GameObject itemObject, InventoryItem item)
     {
+        // Set item name - tương tự như ShopUISetup
+        TextMeshProUGUI nameText = itemObject.transform.Find("ItemName")?.GetComponent<TextMeshProUGUI>();
+        if (nameText != null)
+        {
+            nameText.text = item.name ?? "Unknown Item";
+        }
+
+        // Set item amount - thay vì PriceText như Shop, hiển thị Amount
+        TextMeshProUGUI amountText = itemObject.transform.Find("AmountText")?.GetComponent<TextMeshProUGUI>();
+        if (amountText != null)
+        {
+            amountText.text = $"x{item.amount}";
+        }
+
+        // Set item type - thay vì DateText như Shop, hiển thị Type
+        TextMeshProUGUI typeText = itemObject.transform.Find("TypeText")?.GetComponent<TextMeshProUGUI>();
+        if (typeText != null)
+        {
+            string typeDisplay = !string.IsNullOrEmpty(item.type) ? item.type : "N/A";
+            typeText.text = $"Type: {typeDisplay}";
+        }
+
+        // Fallback cho cấu trúc cũ nếu có
         TextMeshProUGUI[] texts = itemObject.GetComponentsInChildren<TextMeshProUGUI>();
         foreach (var text in texts)
         {
             switch (text.name)
             {
                 case "Name":
-                    text.text = item.name;
+                    text.text = item.name ?? "Unknown Item";
                     break;
                 case "Amount":
                     text.text = $"x{item.amount}";
                     break;
                 case "Type":
-                    text.text = item.type;
+                    text.text = !string.IsNullOrEmpty(item.type) ? item.type : "N/A";
                     break;
             }
         }
     }
 
-    private void OnItemSelected(InventoryItem item)
+    /// <summary>
+    /// Được gọi khi user bấm vào một Grid Item
+    /// </summary>
+    private void OnGridItemSelected(InventoryItem item)
     {
-        ShowStatus($"Selected item: {item.name}");
+        if (item == null)
+        {
+            ShowStatus("Invalid item selected");
+            return;
+        }
+
+        ShowStatus($"Selected Grid Item: {item.name} (x{item.amount}) - Type: {item.type ?? "N/A"}");
+        
+        // Enable Use Item button
         if (useItemButton != null)
             useItemButton.interactable = true;
+        
+        // Debug log để tracking
+        Debug.Log($"[PlayerInventoryUISetup] Grid Item selected: {item.name} (ID: {item.id}, Amount: {item.amount})");
     }
 
+    /// <summary>
+    /// Backward compatibility
+    /// </summary>
+    private void OnItemSelected(InventoryItem item)
+    {
+        OnGridItemSelected(item);
+    }
+
+    /// <summary>
+    /// Refresh toàn bộ UI - clear selections và reload data
+    /// </summary>
     public void OnRefreshClick()
     {
+        ShowStatus("Refreshing inventory data...");
+        ShowLoading(true);
+        
+        // Clear current selections
+        selectedInventory = null;
+        ClearInventoryItems();
+        
+        // Disable Use Item button
+        if (useItemButton != null)
+            useItemButton.interactable = false;
+        
+        // Reload inventory data
         LoadInventoryData();
+        
+        Debug.Log("[PlayerInventoryUISetup] Manual refresh triggered - clearing Grid Items and reloading inventories");
     }
 
     public void OnBackToMainMenuClick()
@@ -587,7 +831,145 @@ public class PlayerInventoryUISetup : MonoBehaviour
     [ContextMenu("Load Dummy Data")]
     public void LoadDummyData()
     {
+        // Bảo vệ: không load dummy data trong Play mode
+        if (Application.isPlaying)
+        {
+            Debug.LogWarning("[PlayerInventoryUISetup] Cannot load dummy data in Play mode");
+            return;
+        }
+        
         LoadDummyDataSafe(false);
+    }
+
+    [ContextMenu("Force Refresh Everything")]
+    public void ForceRefreshEverything()
+    {
+        Debug.Log("[PlayerInventoryUISetup] Force refreshing everything...");
+        
+        // Clear all data
+        ClearAllData();
+        
+        // Ensure UI exists
+        if (inventoryItemPrefab == null || inventoryItemContainer == null)
+        {
+            CreateInventoryUI();
+        }
+        
+        // Load dummy data with Grid Items
+        LoadDummyData();
+        
+        Debug.Log("[PlayerInventoryUISetup] Force refresh completed");
+    }
+
+    [ContextMenu("Test Dropdown Event Flow")]
+    public void TestDropdownEventFlow()
+    {
+        Debug.Log("[PlayerInventoryUISetup] Testing dropdown event flow...");
+        
+        if (PlayerInventoryManager.Instance == null)
+        {
+            Debug.LogError("[PlayerInventoryUISetup] PlayerInventoryManager.Instance is null!");
+            return;
+        }
+
+        // Ensure UI exists
+        if (inventoryItemPrefab == null || inventoryItemContainer == null)
+        {
+            CreateInventoryUI();
+        }
+
+        // Create a test inventory
+        InventoryItem testInventory = new InventoryItem
+        {
+            id = "test_inventory_dropdown",
+            name = "Test Inventory (Dropdown)",
+            type = "Inventory",
+            amount = 1
+        };
+
+        // Simulate dropdown selection via PlayerInventoryManager
+        // Điều này sẽ fire event mà UI đã đăng ký
+        Debug.Log("[PlayerInventoryUISetup] Simulating dropdown selection via PlayerInventoryManager...");
+        PlayerInventoryManager.Instance.SelectInventory(testInventory);
+        
+        Debug.Log("[PlayerInventoryUISetup] Dropdown event test completed - check Grid Items should update automatically!");
+    }
+
+    [ContextMenu("Test Inventory Button Click Flow")]
+    public void TestInventoryButtonClickFlow()
+    {
+        Debug.Log("[PlayerInventoryUISetup] Testing inventory button click flow...");
+        
+        if (PlayerInventoryManager.Instance == null)
+        {
+            Debug.LogError("[PlayerInventoryUISetup] PlayerInventoryManager.Instance is null!");
+            return;
+        }
+
+        // Ensure UI exists
+        if (inventoryItemPrefab == null || inventoryItemContainer == null)
+        {
+            CreateInventoryUI();
+        }
+
+        // Create a test inventory
+        InventoryItem testInventory = new InventoryItem
+        {
+            id = "test_inventory_button_click",
+            name = "Test Inventory (Button Click)",
+            type = "Inventory",
+            amount = 1
+        };
+
+        // Simulate button click - this should trigger the new logic
+        Debug.Log("[PlayerInventoryUISetup] Simulating inventory button click...");
+        OnInventoryButtonClicked(testInventory);
+        
+        Debug.Log("[PlayerInventoryUISetup] Button click test completed - check if dropdown selection was triggered!");
+    }
+
+    [ContextMenu("Test Clear Dummy Data (Simulate Play Mode)")]
+    public void TestClearDummyData()
+    {
+        Debug.Log("[PlayerInventoryUISetup] Testing dummy data clearing (simulating Play mode)...");
+        
+        int clearedInventorySelection = 0;
+        int clearedInventoryItems = 0;
+        
+        // Xóa các items trong inventory selection (Left panel)
+        if (inventorySelectionContainer != null)
+        {
+            clearedInventorySelection = inventorySelectionContainer.childCount;
+            List<Transform> childrenToDestroy = new List<Transform>();
+            foreach (Transform child in inventorySelectionContainer)
+            {
+                childrenToDestroy.Add(child);
+            }
+            foreach (Transform child in childrenToDestroy)
+            {
+                DestroyImmediate(child.gameObject);
+            }
+        }
+        if (inventorySelectionItems != null) inventorySelectionItems.Clear();
+
+        // Xóa các Grid Items trong inventory (Right panel)
+        if (inventoryItemContainer != null)
+        {
+            clearedInventoryItems = inventoryItemContainer.childCount;
+            List<Transform> childrenToDestroy = new List<Transform>();
+            foreach (Transform child in inventoryItemContainer)
+            {
+                childrenToDestroy.Add(child);
+            }
+            foreach (Transform child in childrenToDestroy)
+            {
+                DestroyImmediate(child.gameObject);
+            }
+        }
+        if (inventoryItems != null) inventoryItems.Clear();
+        
+        Debug.Log($"[PlayerInventoryUISetup] Test clear completed: {clearedInventorySelection} inventory selection items, {clearedInventoryItems} Grid Items cleared");
+        ShowStatus("Dummy data cleared (test)");
     }
     
     private void LoadDummyDataSafe(bool forceDelay = false)
@@ -607,6 +989,14 @@ public class PlayerInventoryUISetup : MonoBehaviour
     
     private void LoadDummyDataInternal()
     {
+        // Bảo vệ: không load dummy data trong Play mode
+        if (Application.isPlaying)
+        {
+            Debug.LogWarning("[PlayerInventoryUISetup] Attempted to load dummy data in Play mode - ignored");
+            return;
+        }
+        
+        // Create dummy inventories
         List<InventoryItem> dummyInventories = new List<InventoryItem>();
         
         for (int i = 1; i <= dummyInventoryCount; i++)
@@ -622,7 +1012,33 @@ public class PlayerInventoryUISetup : MonoBehaviour
         }
         
         PopulateInventorySelection(dummyInventories);
-        ShowStatus("Dummy data loaded");
+        
+        // Also create dummy Grid Items to test display
+        if (dummyInventories.Count > 0)
+        {
+            // Select first inventory and create dummy items
+            selectedInventory = dummyInventories[0];
+            
+            List<InventoryItem> dummyGridItems = new List<InventoryItem>();
+            for (int i = 1; i <= dummyItemCount; i++)
+            {
+                InventoryItem item = new InventoryItem
+                {
+                    id = $"item_{i}",
+                    name = $"Grid Item {i}",
+                    type = $"Type {(i % 3) + 1}",
+                    amount = Random.Range(1, 10)
+                };
+                dummyGridItems.Add(item);
+            }
+            
+            // Populate Grid Items to show immediately
+            PopulateAllInventoryItems(dummyGridItems);
+            Debug.Log($"[PlayerInventoryUISetup] Created {dummyGridItems.Count} dummy Grid Items");
+        }
+        
+        ShowStatus($"Dummy data loaded: {dummyInventories.Count} inventories, {dummyItemCount} Grid Items");
+        Debug.Log("[PlayerInventoryUISetup] Dummy data loading completed");
     }
 
     // Methods for Editor buttons
@@ -663,16 +1079,33 @@ public class PlayerInventoryUISetup : MonoBehaviour
 
     public void ToggleDummyDataButton()
     {
-        showDummyData = !showDummyData;
-        if (showDummyData && Application.isEditor)
+        if (Application.isEditor)
         {
-            LoadDummyDataSafe(true);
+            showDummyData = !showDummyData;
+            Debug.Log($"[PlayerInventoryUISetup] Dummy data toggled: {showDummyData}");
+            
+            if (showDummyData)
+            {
+                LoadDummyData();
+            }
+            else
+            {
+                ClearAllData();
+            }
         }
         else
         {
-            ClearInventorySelectionItems();
-            ClearInventoryItems();
-            ShowStatus($"Dummy data {(showDummyData ? "enabled" : "disabled")}");
+            Debug.LogWarning("[PlayerInventoryUISetup] Dummy data toggle only available in Editor mode");
+        }
+    }
+
+    [ContextMenu("Reset Dummy Data Settings")]
+    public void ResetDummyDataSettings()
+    {
+        if (Application.isEditor)
+        {
+            showDummyData = true;
+            Debug.Log("[PlayerInventoryUISetup] Dummy data settings reset to default");
         }
     }
 
@@ -693,6 +1126,119 @@ public class PlayerInventoryUISetup : MonoBehaviour
     public void HideLoadingTest()
     {
         ShowLoading(false);
+    }
+
+    [ContextMenu("Test Grid Items Display")]
+    public void TestGridItemsDisplay()
+    {
+        if (selectedInventory == null)
+        {
+            Debug.LogWarning("[PlayerInventoryUISetup] No inventory selected for testing. Please select an inventory first.");
+            ShowStatus("No inventory selected for testing");
+            return;
+        }
+
+        Debug.Log($"[PlayerInventoryUISetup] Testing Grid Items display for inventory: {selectedInventory.name}");
+        ShowStatus($"Testing display for '{selectedInventory.name}'...");
+        ShowLoading(true);
+        
+        // Force reload items for current selected inventory using new logic
+        if (PlayerInventoryManager.Instance != null)
+        {
+            PlayerInventoryManager.Instance.SelectInventory(selectedInventory);
+        }
+        else
+        {
+            ShowLoading(false);
+            ShowStatus("PlayerInventoryManager not found!");
+        }
+    }
+
+    [ContextMenu("Debug Current State")]
+    public void DebugCurrentState()
+    {
+        Debug.Log("=== PlayerInventoryUISetup Current State ===");
+        Debug.Log($"Auto Setup: {autoSetup}");
+        Debug.Log($"Selected Inventory: {selectedInventory?.name ?? "None"}");
+        Debug.Log($"Grid Items Count: {inventoryItems.Count}");
+        Debug.Log($"Inventory Selection Count: {inventorySelectionItems.Count}");
+        Debug.Log($"Prefab Available: {inventoryItemPrefab != null}");
+        Debug.Log($"Container Available: {inventoryItemContainer != null}");
+        Debug.Log($"InventoryItemsPanel Available: {inventoryItemsPanel != null}");
+        Debug.Log($"InventoryScrollRect Available: {inventoryScrollRect != null}");
+        
+        // Check UI hierarchy
+        Canvas canvas = FindFirstObjectByType<Canvas>();
+        Debug.Log($"Canvas Available: {canvas != null}");
+        
+        if (inventoryItemContainer != null)
+        {
+            Debug.Log($"Container Active: {inventoryItemContainer.gameObject.activeSelf}");
+            Debug.Log($"Container Children: {inventoryItemContainer.childCount}");
+            
+            // List all children in container
+            for (int i = 0; i < inventoryItemContainer.childCount; i++)
+            {
+                Transform child = inventoryItemContainer.GetChild(i);
+                Debug.Log($"  Child {i}: {child.name} (Active: {child.gameObject.activeSelf})");
+            }
+        }
+        
+        if (PlayerInventoryManager.Instance != null)
+        {
+            Debug.Log($"PlayerInventoryManager Available: True");
+            Debug.Log($"Filtered Inventories: {PlayerInventoryManager.Instance.FilteredInventoryItems.Count}");
+            Debug.Log($"Items in Selected Inventory: {PlayerInventoryManager.Instance.InventoryItems.Count}");
+        }
+        else
+        {
+            Debug.Log("PlayerInventoryManager Available: False");
+        }
+        Debug.Log("===========================================");
+    }
+
+    [ContextMenu("Force Create UI & Test Grid Items")]
+    public void ForceCreateUIAndTestGridItems()
+    {
+        Debug.Log("[PlayerInventoryUISetup] Force creating UI and testing Grid Items...");
+        
+        // Force create UI if not exists
+        if (inventoryItemPrefab == null || inventoryItemContainer == null)
+        {
+            Debug.Log("[PlayerInventoryUISetup] UI components missing, creating UI...");
+            CreateInventoryUI();
+        }
+        
+        // Wait for UI creation
+        StartCoroutine(DelayedTestGridItems());
+    }
+    
+    private System.Collections.IEnumerator DelayedTestGridItems()
+    {
+        yield return new WaitForEndOfFrame();
+        
+        Debug.Log("[PlayerInventoryUISetup] Testing Grid Items creation...");
+        
+        // Create test dummy items
+        List<InventoryItem> testItems = new List<InventoryItem>();
+        for (int i = 1; i <= 5; i++)
+        {
+            testItems.Add(new InventoryItem
+            {
+                id = $"test_item_{i}",
+                name = $"Test Item {i}",
+                type = "TestType",
+                amount = i * 2
+            });
+        }
+        
+        // Force populate Grid Items
+        Debug.Log($"[PlayerInventoryUISetup] Creating {testItems.Count} test Grid Items...");
+        PopulateAllInventoryItems(testItems);
+        
+        // Debug result
+        Debug.Log($"[PlayerInventoryUISetup] Test completed. Grid Items created: {inventoryItems.Count}");
+        DebugCurrentState();
     }
 
     #region UI Creation Helper Methods
@@ -820,13 +1366,13 @@ public class PlayerInventoryUISetup : MonoBehaviour
         scrollRect.vertical = true;
         scrollRect.scrollSensitivity = 10f;
 
-        // Add Grid Layout Group
+        // Add Grid Layout Group - Updated for new 400x150 item size
         GridLayoutGroup layoutGroup = contentGO.AddComponent<GridLayoutGroup>();
-        layoutGroup.cellSize = new Vector2(150, 180);
+        layoutGroup.cellSize = new Vector2(400, 150); // Match new item size
         layoutGroup.spacing = new Vector2(15, 15);
         layoutGroup.padding = new RectOffset(15, 15, 15, 15);
         layoutGroup.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-        layoutGroup.constraintCount = 4;
+        layoutGroup.constraintCount = 2; // Changed from 4 to 2 for larger items
 
         // Add Content Size Fitter
         ContentSizeFitter sizeFitter = contentGO.AddComponent<ContentSizeFitter>();
@@ -904,43 +1450,58 @@ public class PlayerInventoryUISetup : MonoBehaviour
 
     private void CreateInventoryItemPrefab()
     {
-        GameObject prefab = CreateUIElement("InventoryItemPrefab", null);
-        RectTransform prefabRect = prefab.GetComponent<RectTransform>();
-        prefabRect.sizeDelta = new Vector2(150, 180);
+        // Create inventory item prefab as a 400x150 button - same size as ShopUISetup
+        GameObject itemPrefab = CreateUIElement("InventoryItemPrefab", null);
+        RectTransform itemRect = itemPrefab.GetComponent<RectTransform>();
+        itemRect.sizeDelta = new Vector2(400, 150);
 
-        // Add background
-        Image bg = prefab.AddComponent<Image>();
-        bg.color = new Color(0.2f, 0.2f, 0.3f, 0.8f);
+        // Add background image
+        Image itemBg = itemPrefab.AddComponent<Image>();
+        itemBg.color = new Color(0.2f, 0.4f, 0.3f, 0.8f); // Green tint to distinguish from shop
 
-        // Add button
-        Button button = prefab.AddComponent<Button>();
+        // Add Button component
+        Button itemButton = itemPrefab.AddComponent<Button>();
+        ColorBlock buttonColors = itemButton.colors;
+        buttonColors.normalColor = new Color(0.2f, 0.4f, 0.3f, 0.8f);
+        buttonColors.highlightedColor = new Color(0.3f, 0.5f, 0.4f, 0.9f);
+        buttonColors.pressedColor = new Color(0.1f, 0.3f, 0.2f, 0.8f);
+        itemButton.colors = buttonColors;
 
-        // Create name text với Auto Size
-        GameObject nameGO = CreateText("Name", "Item Name", prefab.transform, 14, true);
+        // Add Vertical Layout Group for content
+        VerticalLayoutGroup itemLayout = itemPrefab.AddComponent<VerticalLayoutGroup>();
+        itemLayout.spacing = 5f;
+        itemLayout.padding = new RectOffset(10, 10, 10, 10);
+        itemLayout.childControlWidth = true;
+        itemLayout.childControlHeight = false;
+        itemLayout.childForceExpandWidth = false;
+        itemLayout.childForceExpandHeight = false;
+
+        // Create Item Name - tương tự ShopUISetup
+        GameObject nameGO = CreateText("ItemName", "Item Name", itemPrefab.transform, 32);
         RectTransform nameRect = nameGO.GetComponent<RectTransform>();
-        nameRect.anchorMin = new Vector2(0, 0.6f);
-        nameRect.anchorMax = new Vector2(1, 0.8f);
-        nameRect.offsetMin = new Vector2(5, 0);
-        nameRect.offsetMax = new Vector2(-5, 0);
+        nameRect.sizeDelta = new Vector2(380, 60);
+        TextMeshProUGUI nameText = nameGO.GetComponent<TextMeshProUGUI>();
+        nameText.alignment = TextAlignmentOptions.Center;
 
-        // Create amount text với Auto Size
-        GameObject amountGO = CreateText("Amount", "x1", prefab.transform, 12, true);
-        RectTransform amountRect = amountGO.GetComponent<RectTransform>();
-        amountRect.anchorMin = new Vector2(0, 0.4f);
-        amountRect.anchorMax = new Vector2(1, 0.6f);
-        amountRect.offsetMin = new Vector2(5, 0);
-        amountRect.offsetMax = new Vector2(-5, 0);
+        // Create Amount Text - thay vì PriceText như Shop
+        GameObject amountGO = CreateText("AmountText", "x1", itemPrefab.transform, 36);
+        RectTransform amountTextRect = amountGO.GetComponent<RectTransform>();
+        amountTextRect.sizeDelta = new Vector2(380, 50);
+        TextMeshProUGUI amountText = amountGO.GetComponent<TextMeshProUGUI>();
+        amountText.color = new Color(0.2f, 1f, 0.8f, 1f); // Cyan color for amount
+        amountText.alignment = TextAlignmentOptions.Center;
 
-        // Create type text với Auto Size
-        GameObject typeGO = CreateText("Type", "Type", prefab.transform, 10, true);
-        RectTransform typeRect = typeGO.GetComponent<RectTransform>();
-        typeRect.anchorMin = new Vector2(0, 0.2f);
-        typeRect.anchorMax = new Vector2(1, 0.4f);
-        typeRect.offsetMin = new Vector2(5, 0);
-        typeRect.offsetMax = new Vector2(-5, 0);
+        // Create Type Text - thay vì DateText như Shop
+        GameObject typeGO = CreateText("TypeText", "Type: N/A", itemPrefab.transform, 24);
+        RectTransform typeTextRect = typeGO.GetComponent<RectTransform>();
+        typeTextRect.sizeDelta = new Vector2(380, 40);
+        TextMeshProUGUI typeText = typeGO.GetComponent<TextMeshProUGUI>();
+        typeText.color = new Color(0.7f, 0.7f, 0.7f, 1f);
+        typeText.alignment = TextAlignmentOptions.Center;
 
-        inventoryItemPrefab = prefab;
-        prefab.SetActive(false);
+        // Store as prefab
+        inventoryItemPrefab = itemPrefab;
+        inventoryItemPrefab.SetActive(false); // Hide prefab
     }
 
     GameObject CreateUIElement(string name, Transform parent)
@@ -1013,8 +1574,12 @@ public class PlayerInventoryUISetup : MonoBehaviour
     {
         if (PlayerInventoryManager.Instance != null)
         {
+            // Unsubscribe từ tất cả events để tránh memory leaks
             PlayerInventoryManager.Instance.OnFilteredInventoryItemsChanged -= OnInventoriesLoaded;
             PlayerInventoryManager.Instance.OnInventoryItemsChanged -= OnInventoryItemsLoaded;
+            PlayerInventoryManager.Instance.OnInventorySelectedFromDropdown -= OnInventorySelectedFromDropdown;
+            
+            Debug.Log("[PlayerInventoryUISetup] Unsubscribed from all PlayerInventoryManager events");
         }
     }
 } 

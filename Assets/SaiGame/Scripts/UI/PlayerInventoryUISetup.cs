@@ -4,6 +4,9 @@ using UnityEngine.EventSystems;
 using TMPro;
 using System.Collections.Generic;
 using System.Collections;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 /// <summary>
 /// UI Setup cho Player Inventory - tương tự như ShopUISetup nhưng dành cho inventory
@@ -91,7 +94,7 @@ public class PlayerInventoryUISetup : MonoBehaviour
         // Tạo dummy data khi ở Editor mode và không play game
         if (showDummyData && !Application.isPlaying && Application.isEditor)
         {
-            LoadDummyData();
+            LoadDummyDataSafe(true);
         }
     }
 
@@ -305,32 +308,118 @@ public class PlayerInventoryUISetup : MonoBehaviour
 
     private void ClearInventorySelectionItems()
     {
+        // Xóa các GameObject theo dõi trong list
         foreach (GameObject item in inventorySelectionItems)
         {
             if (item != null) 
             {
                 if (Application.isPlaying)
+                {
                     Destroy(item);
+                }
                 else
-                    DestroyImmediate(item);
+                {
+#if UNITY_EDITOR
+                    // Sử dụng delayCall để tránh lỗi trong OnValidate
+                    UnityEditor.EditorApplication.delayCall += () => 
+                    {
+                        if (item != null)
+                            DestroyImmediate(item);
+                    };
+#endif
+                }
             }
         }
         inventorySelectionItems.Clear();
+        
+        // Xóa thêm bất kỳ GameObject con nào còn sót lại trong container
+        if (inventorySelectionContainer != null)
+        {
+            List<Transform> childrenToDestroy = new List<Transform>();
+            foreach (Transform child in inventorySelectionContainer)
+            {
+                childrenToDestroy.Add(child);
+            }
+            
+            foreach (Transform child in childrenToDestroy)
+            {
+                if (child != null)
+                {
+                    if (Application.isPlaying)
+                    {
+                        Destroy(child.gameObject);
+                    }
+                    else
+                    {
+#if UNITY_EDITOR
+                        UnityEditor.EditorApplication.delayCall += () => 
+                        {
+                            if (child != null)
+                                DestroyImmediate(child.gameObject);
+                        };
+#endif
+                    }
+                }
+            }
+        }
     }
 
     private void ClearInventoryItems()
     {
+        // Xóa các GameObject theo dõi trong list
         foreach (GameObject item in inventoryItems)
         {
             if (item != null) 
             {
                 if (Application.isPlaying)
+                {
                     Destroy(item);
+                }
                 else
-                    DestroyImmediate(item);
+                {
+#if UNITY_EDITOR
+                    // Sử dụng delayCall để tránh lỗi trong OnValidate
+                    UnityEditor.EditorApplication.delayCall += () => 
+                    {
+                        if (item != null)
+                            DestroyImmediate(item);
+                    };
+#endif
+                }
             }
         }
         inventoryItems.Clear();
+        
+        // Xóa thêm bất kỳ GameObject con nào còn sót lại trong container
+        if (inventoryItemContainer != null)
+        {
+            List<Transform> childrenToDestroy = new List<Transform>();
+            foreach (Transform child in inventoryItemContainer)
+            {
+                childrenToDestroy.Add(child);
+            }
+            
+            foreach (Transform child in childrenToDestroy)
+            {
+                if (child != null)
+                {
+                    if (Application.isPlaying)
+                    {
+                        Destroy(child.gameObject);
+                    }
+                    else
+                    {
+#if UNITY_EDITOR
+                        UnityEditor.EditorApplication.delayCall += () => 
+                        {
+                            if (child != null)
+                                DestroyImmediate(child.gameObject);
+                        };
+#endif
+                    }
+                }
+            }
+        }
     }
 
     private void ShowStatus(string message)
@@ -417,7 +506,7 @@ public class PlayerInventoryUISetup : MonoBehaviour
         // Load dummy data if in editor
         if (showDummyData && !Application.isPlaying)
         {
-            LoadDummyData();
+            LoadDummyDataSafe(true);
         }
 
         ShowStatus("Inventory UI created successfully");
@@ -498,6 +587,26 @@ public class PlayerInventoryUISetup : MonoBehaviour
     [ContextMenu("Load Dummy Data")]
     public void LoadDummyData()
     {
+        LoadDummyDataSafe(false);
+    }
+    
+    private void LoadDummyDataSafe(bool forceDelay = false)
+    {
+        // Nếu được gọi từ OnValidate hoặc context khác cần delay
+        if (forceDelay || !Application.isPlaying)
+        {
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.delayCall += LoadDummyDataInternal;
+#endif
+        }
+        else
+        {
+            LoadDummyDataInternal();
+        }
+    }
+    
+    private void LoadDummyDataInternal()
+    {
         List<InventoryItem> dummyInventories = new List<InventoryItem>();
         
         for (int i = 1; i <= dummyInventoryCount; i++)
@@ -533,7 +642,23 @@ public class PlayerInventoryUISetup : MonoBehaviour
     {
         ClearInventorySelectionItems();
         ClearInventoryItems();
+        
+        // Reset selected inventory
+        selectedInventory = null;
+        if (useItemButton != null)
+        {
+            useItemButton.interactable = false;
+        }
+        
+#if UNITY_EDITOR
+        // Delay status message để đảm bảo việc xóa hoàn thành
+        UnityEditor.EditorApplication.delayCall += () => 
+        {
+            ShowStatus("Dummy data deleted");
+        };
+#else
         ShowStatus("Dummy data deleted");
+#endif
     }
 
     public void ToggleDummyDataButton()
@@ -541,7 +666,7 @@ public class PlayerInventoryUISetup : MonoBehaviour
         showDummyData = !showDummyData;
         if (showDummyData && Application.isEditor)
         {
-            LoadDummyData();
+            LoadDummyDataSafe(true);
         }
         else
         {
@@ -757,16 +882,16 @@ public class PlayerInventoryUISetup : MonoBehaviour
         // Add button
         Button button = prefab.AddComponent<Button>();
 
-        // Create name text - Font size gấp đôi: 20 -> 40
-        GameObject nameGO = CreateText("Name", "Inventory Name", prefab.transform, 40);
+        // Create name text - Font size gấp đôi: 20 -> 40, với Auto Size
+        GameObject nameGO = CreateText("Name", "Inventory Name", prefab.transform, 40, true);
         RectTransform nameRect = nameGO.GetComponent<RectTransform>();
         nameRect.anchorMin = new Vector2(0, 0.5f);
         nameRect.anchorMax = new Vector2(1, 1);
         nameRect.offsetMin = new Vector2(10, 0);
         nameRect.offsetMax = new Vector2(-10, -5);
 
-        // Create amount text - Font size gấp đôi: 16 -> 32
-        GameObject amountGO = CreateText("Amount", "x0", prefab.transform, 32);
+        // Create amount text - Font size gấp đôi: 16 -> 32, với Auto Size
+        GameObject amountGO = CreateText("Amount", "x0", prefab.transform, 32, true);
         RectTransform amountRect = amountGO.GetComponent<RectTransform>();
         amountRect.anchorMin = new Vector2(0, 0);
         amountRect.anchorMax = new Vector2(1, 0.5f);
@@ -790,24 +915,24 @@ public class PlayerInventoryUISetup : MonoBehaviour
         // Add button
         Button button = prefab.AddComponent<Button>();
 
-        // Create name text
-        GameObject nameGO = CreateText("Name", "Item Name", prefab.transform, 14);
+        // Create name text với Auto Size
+        GameObject nameGO = CreateText("Name", "Item Name", prefab.transform, 14, true);
         RectTransform nameRect = nameGO.GetComponent<RectTransform>();
         nameRect.anchorMin = new Vector2(0, 0.6f);
         nameRect.anchorMax = new Vector2(1, 0.8f);
         nameRect.offsetMin = new Vector2(5, 0);
         nameRect.offsetMax = new Vector2(-5, 0);
 
-        // Create amount text
-        GameObject amountGO = CreateText("Amount", "x1", prefab.transform, 12);
+        // Create amount text với Auto Size
+        GameObject amountGO = CreateText("Amount", "x1", prefab.transform, 12, true);
         RectTransform amountRect = amountGO.GetComponent<RectTransform>();
         amountRect.anchorMin = new Vector2(0, 0.4f);
         amountRect.anchorMax = new Vector2(1, 0.6f);
         amountRect.offsetMin = new Vector2(5, 0);
         amountRect.offsetMax = new Vector2(-5, 0);
 
-        // Create type text
-        GameObject typeGO = CreateText("Type", "Type", prefab.transform, 10);
+        // Create type text với Auto Size
+        GameObject typeGO = CreateText("Type", "Type", prefab.transform, 10, true);
         RectTransform typeRect = typeGO.GetComponent<RectTransform>();
         typeRect.anchorMin = new Vector2(0, 0.2f);
         typeRect.anchorMax = new Vector2(1, 0.4f);
@@ -829,12 +954,26 @@ public class PlayerInventoryUISetup : MonoBehaviour
 
     GameObject CreateText(string name, string text, Transform parent, int fontSize)
     {
+        return CreateText(name, text, parent, fontSize, false);
+    }
+    
+    GameObject CreateText(string name, string text, Transform parent, int fontSize, bool enableAutoSize)
+    {
         GameObject go = CreateUIElement(name, parent);
         TextMeshProUGUI tmpText = go.AddComponent<TextMeshProUGUI>();
         tmpText.text = text;
         tmpText.fontSize = fontSize;
         tmpText.color = Color.white;
         tmpText.alignment = TextAlignmentOptions.Center;
+        
+        // Cài đặt Auto Size nếu được yêu cầu
+        if (enableAutoSize)
+        {
+            tmpText.enableAutoSizing = true;
+            tmpText.fontSizeMin = 8f;  // Kích thước font tối thiểu
+            tmpText.fontSizeMax = fontSize; // Kích thước font tối đa (dùng fontSize ban đầu)
+        }
+        
         return go;
     }
 

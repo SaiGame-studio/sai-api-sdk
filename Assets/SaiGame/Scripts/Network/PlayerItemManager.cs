@@ -29,7 +29,6 @@ public class PlayerItemManager : SaiSingleton<PlayerItemManager>
         // Kiểm tra xem APIManager đã có token hợp lệ chưa
         if (autoLoad && APIManager.Instance != null && APIManager.Instance.HasValidToken())
         {
-            if (showDebugLog) Debug.Log("[PlayerItemManager] AutoLoad: Found valid token, loading player items");
             GetPlayerItems();
         }
         

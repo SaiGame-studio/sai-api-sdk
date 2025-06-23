@@ -88,14 +88,11 @@ public class PlayerInventoryManager : SaiSingleton<PlayerInventoryManager>
         {
             PlayerItemManager.Instance.OnPlayerItemsChanged -= OnPlayerItemsUpdated;
             isEventRegistered = false;
-            
-            if (showDebugLog) Debug.Log("[PlayerInventoryManager] Event unregistered from PlayerItemManager");
         }
     }
 
     private void OnPlayerItemsUpdated(List<InventoryItem> items)
     {
-        if (showDebugLog) Debug.Log("[PlayerInventoryManager] PlayerItems updated, refreshing inventory...");
         RefreshInventory();
     }
 
@@ -129,11 +126,6 @@ public class PlayerInventoryManager : SaiSingleton<PlayerInventoryManager>
                 !string.IsNullOrEmpty(item.type) && 
                 item.type.Equals("Inventory", StringComparison.OrdinalIgnoreCase)
             ).ToList();
-
-            if (showDebugLog && filteredInventoryItems.Count > 0)
-            {
-                Debug.Log($"[PlayerInventoryManager] Filtered {filteredInventoryItems.Count} inventory items from {PlayerItemManager.Instance.PlayerItems.Count} total items");
-            }
 
             OnFilteredInventoryItemsChanged?.Invoke(filteredInventoryItems);
         }

@@ -105,12 +105,6 @@ public class PlayerInventoryUISetup : MonoBehaviour
             
             // Reset selected inventory
             selectedInventory = null;
-            
-            Debug.Log($"[PlayerInventoryUISetup] Dummy data cleared: {clearedInventorySelection} inventory selection items, {clearedInventoryItems} Grid Items");
-        }
-        else
-        {
-            Debug.Log("[PlayerInventoryUISetup] Editor mode - keeping dummy data for preview");
         }
     }
 
@@ -124,7 +118,6 @@ public class PlayerInventoryUISetup : MonoBehaviour
         if (autoSetup)
         {
             CreateInventoryUI();
-            Debug.Log("[PlayerInventoryUISetup] Auto setup enabled - UI created");
         }
 
         SetupEventListeners();
@@ -167,13 +160,6 @@ public class PlayerInventoryUISetup : MonoBehaviour
         if (PlayerInventoryManager.Instance != null)
         {
             PlayerInventoryManager.Instance.OnInventorySelectedFromDropdown += OnInventorySelectedFromDropdown;
-            Debug.Log("[PlayerInventoryUISetup] Registered for OnInventorySelectedFromDropdown event");
-            
-            // Debug: Kiểm tra trạng thái hiện tại của PlayerInventoryManager
-            Debug.Log($"[PlayerInventoryUISetup] Current PlayerInventoryManager state: " +
-                     $"SelectedInventoryId='{PlayerInventoryManager.Instance.GetSelectedInventoryId()}', " +
-                     $"InventoryItemsCount={PlayerInventoryManager.Instance.InventoryItems.Count}, " +
-                     $"FilteredInventoryItemsCount={PlayerInventoryManager.Instance.FilteredInventoryItems.Count}");
         }
         else
         {
@@ -374,26 +360,18 @@ public class PlayerInventoryUISetup : MonoBehaviour
         // Display ALL items from the selected inventory
         if (items != null && items.Count > 0)
         {
-            ShowStatus($"Displaying ALL {items.Count} items from '{currentInventoryName}'");
-            
             // Populate Grid with ALL items
             PopulateAllInventoryItems(items);
-            
-            // Debug log để xác nhận tất cả items được hiển thị
-            Debug.Log($"[PlayerInventoryUISetup] SUCCESS: Displayed ALL {items.Count} items from inventory '{currentInventoryName}' on Grid Items");
             
             // Log chi tiết từng item để debug
             for (int i = 0; i < items.Count; i++)
             {
                 var item = items[i];
-                Debug.Log($"  Item {i+1}: {item.name} (Amount: {item.amount}, Type: {item.type})");
             }
         }
         else
         {
-            ShowStatus($"No items found in '{currentInventoryName}'");
             ClearInventoryItems();
-            Debug.Log($"[PlayerInventoryUISetup] No items found in inventory '{currentInventoryName}'");
         }
     }
 
@@ -457,9 +435,6 @@ public class PlayerInventoryUISetup : MonoBehaviour
                 Debug.LogError($"[PlayerInventoryUISetup] Error creating Grid Item for {item.name}: {ex.Message}");
             }
         }
-        
-        ShowStatus($"Displaying ALL {itemCount} items from '{selectedInventoryName}'");
-        Debug.Log($"[PlayerInventoryUISetup] PopulateAllInventoryItems: Successfully created {itemCount} Grid Items for '{selectedInventoryName}'");
     }
 
     /// <summary>
@@ -524,14 +499,9 @@ public class PlayerInventoryUISetup : MonoBehaviour
             return;
         }
 
-        ShowStatus($"Selected Grid Item: {item.name} (x{item.amount}) - Type: {item.type ?? "N/A"}");
-        
         // Enable Use Item button
         if (useItemButton != null)
             useItemButton.interactable = true;
-        
-        // Debug log để tracking
-        Debug.Log($"[PlayerInventoryUISetup] Grid Item selected: {item.name} (ID: {item.id}, Amount: {item.amount})");
     }
 
     /// <summary>
@@ -1807,8 +1777,6 @@ public class PlayerInventoryUISetup : MonoBehaviour
             PlayerInventoryManager.Instance.OnFilteredInventoryItemsChanged -= OnInventoriesLoaded;
             PlayerInventoryManager.Instance.OnInventoryItemsChanged -= OnInventoryItemsLoaded;
             PlayerInventoryManager.Instance.OnInventorySelectedFromDropdown -= OnInventorySelectedFromDropdown;
-            
-            Debug.Log("[PlayerInventoryUISetup] Unsubscribed from all PlayerInventoryManager events");
         }
     }
 

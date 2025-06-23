@@ -297,7 +297,7 @@ public class MyItemUISetup : MonoBehaviour
         Image backImage = backToMainMenuButton.GetComponent<Image>();
         if (backImage != null)
         {
-            backImage.color = new Color(0.2f, 0.6f, 1f, 1f); // Blue background
+            backImage.color = new Color(0.2f, 0.6f, 1f, 1f); // Unified blue background
         }
         ColorBlock backCb = backToMainMenuButton.colors;
         backCb.normalColor = new Color(0.2f, 0.6f, 1f, 1f);
@@ -324,12 +324,12 @@ public class MyItemUISetup : MonoBehaviour
         Image shopsImage = shopsButton.GetComponent<Image>();
         if (shopsImage != null)
         {
-            shopsImage.color = new Color(0.8f, 0.4f, 0.2f, 1f); // Orange background
+            shopsImage.color = new Color(0.2f, 0.6f, 1f, 1f); // Unified blue background
         }
         ColorBlock shopsCb = shopsButton.colors;
-        shopsCb.normalColor = new Color(0.8f, 0.4f, 0.2f, 1f);
-        shopsCb.highlightedColor = new Color(0.9f, 0.5f, 0.3f, 1f);
-        shopsCb.pressedColor = new Color(0.7f, 0.3f, 0.1f, 1f);
+        shopsCb.normalColor = new Color(0.2f, 0.6f, 1f, 1f);
+        shopsCb.highlightedColor = new Color(0.3f, 0.7f, 1f, 1f);
+        shopsCb.pressedColor = new Color(0.15f, 0.5f, 0.9f, 1f);
         shopsButton.colors = shopsCb;
 
         RectTransform shopsRect = shopsButton.GetComponent<RectTransform>();
@@ -350,16 +350,16 @@ public class MyItemUISetup : MonoBehaviour
             refreshButtonText.alignment = TextAlignmentOptions.Center;
         }
 
-        // Style the refresh button to look nicer
+        // Style the refresh button - Unified blue color
         Image refreshImage = refreshButton.GetComponent<Image>();
         if (refreshImage != null)
         {
-            refreshImage.color = new Color(0.2f, 0.8f, 0.2f, 1f); // Green background
+            refreshImage.color = new Color(0.2f, 0.6f, 1f, 1f); // Unified blue background
         }
         ColorBlock cb = refreshButton.colors;
-        cb.normalColor = new Color(0.2f, 0.8f, 0.2f, 1f);
-        cb.highlightedColor = new Color(0.3f, 0.9f, 0.3f, 1f); // Lighter green on highlight
-        cb.pressedColor = new Color(0.15f, 0.7f, 0.15f, 1f); // Darker green on press
+        cb.normalColor = new Color(0.2f, 0.6f, 1f, 1f);
+        cb.highlightedColor = new Color(0.3f, 0.7f, 1f, 1f); // Lighter blue on highlight
+        cb.pressedColor = new Color(0.15f, 0.5f, 0.9f, 1f); // Darker blue on press
         refreshButton.colors = cb;
 
         RectTransform refreshRect = refreshButton.GetComponent<RectTransform>();

@@ -546,7 +546,7 @@ public class PlayerInventoryUISetup : MonoBehaviour
 
     public void OnUseItemClick()
     {
-        ShowStatus("Use item not implemented yet");
+        SceneController.LoadScene(myItemSceneName);
     }
 
     private void ClearInventorySelectionItems()
@@ -1063,7 +1063,7 @@ public class PlayerInventoryUISetup : MonoBehaviour
         selectedInventory = null;
         if (useItemButton != null)
         {
-            useItemButton.interactable = false;
+            useItemButton.interactable = true;
         }
         
 #if UNITY_EDITOR
@@ -1364,7 +1364,7 @@ public class PlayerInventoryUISetup : MonoBehaviour
         GameObject backButtonGO = CreateButton("BackButton", "Main Menu", mainPanel.transform);
         backToMainMenuButton = backButtonGO.GetComponent<Button>();
         
-        // Style the back to main menu button - Blue color like ShopUISetup
+        // Style the back to main menu button - Unified blue color
         TextMeshProUGUI backButtonText = backToMainMenuButton.GetComponentInChildren<TextMeshProUGUI>();
         if (backButtonText != null)
         {
@@ -1375,7 +1375,7 @@ public class PlayerInventoryUISetup : MonoBehaviour
         Image backImage = backToMainMenuButton.GetComponent<Image>();
         if (backImage != null)
         {
-            backImage.color = new Color(0.2f, 0.6f, 1f, 1f); // Blue background
+            backImage.color = new Color(0.2f, 0.6f, 1f, 1f); // Unified blue background
         }
         ColorBlock backCb = backToMainMenuButton.colors;
         backCb.normalColor = new Color(0.2f, 0.6f, 1f, 1f);
@@ -1394,7 +1394,7 @@ public class PlayerInventoryUISetup : MonoBehaviour
         GameObject shopsButtonGO = CreateButton("ShopsButton", "Shops", mainPanel.transform);
         shopsButton = shopsButtonGO.GetComponent<Button>();
         
-        // Style the shops button - Purple color like My Item button in ShopUISetup
+        // Style the shops button - Unified blue color
         TextMeshProUGUI shopsButtonText = shopsButton.GetComponentInChildren<TextMeshProUGUI>();
         if (shopsButtonText != null)
         {
@@ -1404,12 +1404,12 @@ public class PlayerInventoryUISetup : MonoBehaviour
         Image shopsImage = shopsButton.GetComponent<Image>();
         if (shopsImage != null)
         {
-            shopsImage.color = new Color(0.8f, 0.4f, 0.8f, 1f); // Purple background
+            shopsImage.color = new Color(0.2f, 0.6f, 1f, 1f); // Unified blue background
         }
         ColorBlock shopsCb = shopsButton.colors;
-        shopsCb.normalColor = new Color(0.8f, 0.4f, 0.8f, 1f);
-        shopsCb.highlightedColor = new Color(0.9f, 0.5f, 0.9f, 1f);
-        shopsCb.pressedColor = new Color(0.7f, 0.3f, 0.7f, 1f);
+        shopsCb.normalColor = new Color(0.2f, 0.6f, 1f, 1f);
+        shopsCb.highlightedColor = new Color(0.3f, 0.7f, 1f, 1f);
+        shopsCb.pressedColor = new Color(0.15f, 0.5f, 0.9f, 1f);
         shopsButton.colors = shopsCb;
         
         RectTransform shopsRect = shopsButton.GetComponent<RectTransform>();
@@ -1420,11 +1420,11 @@ public class PlayerInventoryUISetup : MonoBehaviour
         shopsRect.sizeDelta = new Vector2(150, 80);
 
         // Create Use Item button - moved to the right to avoid overlap
-        GameObject useButtonGO = CreateButton("UseItemButton", "Use Item", mainPanel.transform);
+        GameObject useButtonGO = CreateButton("UseItemButton", "My Item", mainPanel.transform);
         useItemButton = useButtonGO.GetComponent<Button>();
-        useItemButton.interactable = false;
+        useItemButton.interactable = true;
         
-        // Style the use item button - Green color like Inventory button in ShopUISetup
+        // Style the use item button - Unified blue color
         TextMeshProUGUI useButtonText = useItemButton.GetComponentInChildren<TextMeshProUGUI>();
         if (useButtonText != null)
         {
@@ -1434,12 +1434,12 @@ public class PlayerInventoryUISetup : MonoBehaviour
         Image useImage = useItemButton.GetComponent<Image>();
         if (useImage != null)
         {
-            useImage.color = new Color(0.4f, 0.8f, 0.4f, 1f); // Green background
+            useImage.color = new Color(0.2f, 0.6f, 1f, 1f); // Unified blue background
         }
         ColorBlock useCb = useItemButton.colors;
-        useCb.normalColor = new Color(0.4f, 0.8f, 0.4f, 1f);
-        useCb.highlightedColor = new Color(0.5f, 0.9f, 0.5f, 1f);
-        useCb.pressedColor = new Color(0.3f, 0.7f, 0.3f, 1f);
+        useCb.normalColor = new Color(0.2f, 0.6f, 1f, 1f);
+        useCb.highlightedColor = new Color(0.3f, 0.7f, 1f, 1f);
+        useCb.pressedColor = new Color(0.15f, 0.5f, 0.9f, 1f);
         useItemButton.colors = useCb;
         
         RectTransform useRect = useItemButton.GetComponent<RectTransform>();
@@ -1453,7 +1453,7 @@ public class PlayerInventoryUISetup : MonoBehaviour
         GameObject refreshButtonGO = CreateButton("RefreshButton", "Refresh", mainPanel.transform);
         refreshButton = refreshButtonGO.GetComponent<Button>();
         
-        // Style the refresh button - Green color like ShopUISetup
+        // Style the refresh button - Unified blue color
         TextMeshProUGUI refreshButtonText = refreshButton.GetComponentInChildren<TextMeshProUGUI>();
         if (refreshButtonText != null)
         {
@@ -1463,12 +1463,12 @@ public class PlayerInventoryUISetup : MonoBehaviour
         Image refreshImage = refreshButton.GetComponent<Image>();
         if (refreshImage != null)
         {
-            refreshImage.color = new Color(0.2f, 0.8f, 0.2f, 1f); // Green background
+            refreshImage.color = new Color(0.2f, 0.6f, 1f, 1f); // Unified blue background
         }
         ColorBlock cb = refreshButton.colors;
-        cb.normalColor = new Color(0.2f, 0.8f, 0.2f, 1f);
-        cb.highlightedColor = new Color(0.3f, 0.9f, 0.3f, 1f); // Lighter green on highlight
-        cb.pressedColor = new Color(0.15f, 0.7f, 0.15f, 1f); // Darker green on press
+        cb.normalColor = new Color(0.2f, 0.6f, 1f, 1f);
+        cb.highlightedColor = new Color(0.3f, 0.7f, 1f, 1f); // Lighter blue on highlight
+        cb.pressedColor = new Color(0.15f, 0.5f, 0.9f, 1f); // Darker blue on press
         refreshButton.colors = cb;
         
         RectTransform refreshRect = refreshButton.GetComponent<RectTransform>();

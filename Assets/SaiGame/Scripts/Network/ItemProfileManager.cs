@@ -66,7 +66,6 @@ public class ItemProfileManager : SaiSingleton<ItemProfileManager>
     {
         if (autoLoad)
         {
-            if (showDebugLog) Debug.Log("[ItemProfileManager] AutoLoad: Authentication success, loading item profiles");
             GetItemProfiles();
         }
     }

@@ -341,7 +341,6 @@ public class APIManager : SaiSingleton<APIManager>
             {
                 // Lưu token với thông tin expire
                 SetAuthTokenWithExpire(response.token, response.expires_at, response.expires_in);
-                if (showDebugLog) Debug.Log("Login successful, triggering OnAuthenticationSuccess event");
                 OnAuthenticationSuccess?.Invoke();
             }
             onComplete?.Invoke(response);

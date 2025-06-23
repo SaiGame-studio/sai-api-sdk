@@ -18,6 +18,7 @@ public class RegisterUISetup : MonoBehaviour
     [SerializeField] public TMP_InputField confirmPasswordInput;
     [SerializeField] public Button registerButton;
     [SerializeField] public Button goToLoginButton;
+    [SerializeField] public TextMeshProUGUI apiStatusLabel;
     [SerializeField] public TextMeshProUGUI statusText;
     [SerializeField] public GameObject loadingPanel;
 
@@ -83,6 +84,7 @@ public class RegisterUISetup : MonoBehaviour
         confirmPasswordInput = null;
         registerButton = null;
         goToLoginButton = null;
+        apiStatusLabel = null;
         statusText = null;
         loadingPanel = null;
     }
@@ -125,24 +127,24 @@ public class RegisterUISetup : MonoBehaviour
         Image mainImage = mainPanel.AddComponent<Image>();
         mainImage.color = new Color(0.2f, 0.2f, 0.3f, 0.9f);
         RectTransform mainRect = mainPanel.GetComponent<RectTransform>();
-        mainRect.sizeDelta = new Vector2(900, 1200); // Tăng kích thước lớn hơn nữa
+        mainRect.sizeDelta = new Vector2(900, 1300); // Tăng kích thước để chứa thêm confirm password
 
         // Create Title - Font lớn hơn nữa
-        GameObject title = CreateText("RegisterTitle", "CREATE ACCOUNT", mainPanel.transform, 64); // Tăng từ 36 lên 64
+        GameObject title = CreateText("RegisterTitle", "CREATE ACCOUNT", mainPanel.transform, 64);
         RectTransform titleRect = title.GetComponent<RectTransform>();
-        titleRect.anchoredPosition = new Vector2(0, 450); // Điều chỉnh vị trí
-        titleRect.sizeDelta = new Vector2(400, 160); // Tăng kích thước
+        titleRect.anchoredPosition = new Vector2(0, 500);
+        titleRect.sizeDelta = new Vector2(400, 160);
 
         // Create Email Input - Lớn hơn nữa
         GameObject emailInputGO = CreateInputField("EmailInput", "Email", mainPanel.transform);
         RectTransform emailRect = emailInputGO.GetComponent<RectTransform>();
-        emailRect.anchoredPosition = new Vector2(0, 300); // Điều chỉnh vị trí
-        emailRect.sizeDelta = new Vector2(700, 100); // Tăng kích thước lớn hơn nữa
+        emailRect.anchoredPosition = new Vector2(0, 350);
+        emailRect.sizeDelta = new Vector2(700, 100);
         emailInput = emailInputGO.GetComponent<TMP_InputField>();
 
         // Set font size cho email input
         if (emailInput.textComponent != null)
-            emailInput.textComponent.fontSize = 32; // Tăng font size lớn hơn nữa
+            emailInput.textComponent.fontSize = 32;
         if (emailInput.placeholder != null && emailInput.placeholder is TextMeshProUGUI tmpPlaceholder)
         {
             tmpPlaceholder.fontSize = 32;
@@ -151,14 +153,14 @@ public class RegisterUISetup : MonoBehaviour
         // Create Password Input - Lớn hơn nữa
         GameObject passwordInputGO = CreateInputField("PasswordInput", "Password", mainPanel.transform);
         RectTransform passwordRect = passwordInputGO.GetComponent<RectTransform>();
-        passwordRect.anchoredPosition = new Vector2(0, 150); // Điều chỉnh vị trí
-        passwordRect.sizeDelta = new Vector2(700, 100); // Tăng kích thước lớn hơn nữa
+        passwordRect.anchoredPosition = new Vector2(0, 200);
+        passwordRect.sizeDelta = new Vector2(700, 100);
         passwordInput = passwordInputGO.GetComponent<TMP_InputField>();
 
         // Set password input type và font size
         passwordInput.contentType = TMP_InputField.ContentType.Password;
         if (passwordInput.textComponent != null)
-            passwordInput.textComponent.fontSize = 32; // Tăng font size lớn hơn nữa
+            passwordInput.textComponent.fontSize = 32;
         if (passwordInput.placeholder != null && passwordInput.placeholder is TextMeshProUGUI tmpPassPlaceholder)
         {
             tmpPassPlaceholder.fontSize = 32;
@@ -167,14 +169,14 @@ public class RegisterUISetup : MonoBehaviour
         // Create Confirm Password Input - Lớn hơn nữa
         GameObject confirmPasswordInputGO = CreateInputField("ConfirmPasswordInput", "Confirm Password", mainPanel.transform);
         RectTransform confirmPasswordRect = confirmPasswordInputGO.GetComponent<RectTransform>();
-        confirmPasswordRect.anchoredPosition = new Vector2(0, 0); // Điều chỉnh vị trí
-        confirmPasswordRect.sizeDelta = new Vector2(700, 100); // Tăng kích thước lớn hơn nữa
+        confirmPasswordRect.anchoredPosition = new Vector2(0, 50);
+        confirmPasswordRect.sizeDelta = new Vector2(700, 100);
         confirmPasswordInput = confirmPasswordInputGO.GetComponent<TMP_InputField>();
 
         // Set confirm password input type và font size
         confirmPasswordInput.contentType = TMP_InputField.ContentType.Password;
         if (confirmPasswordInput.textComponent != null)
-            confirmPasswordInput.textComponent.fontSize = 32; // Tăng font size lớn hơn nữa
+            confirmPasswordInput.textComponent.fontSize = 32;
         if (confirmPasswordInput.placeholder != null && confirmPasswordInput.placeholder is TextMeshProUGUI tmpConfirmPassPlaceholder)
         {
             tmpConfirmPassPlaceholder.fontSize = 32;
@@ -183,70 +185,66 @@ public class RegisterUISetup : MonoBehaviour
         // Create Register Button - Lớn hơn nữa
         GameObject registerBtn = CreateButton("RegisterButton", "REGISTER", mainPanel.transform);
         RectTransform registerRect = registerBtn.GetComponent<RectTransform>();
-        registerRect.anchoredPosition = new Vector2(0, -150); // Điều chỉnh vị trí
-        registerRect.sizeDelta = new Vector2(400, 100); // Tăng kích thước lớn hơn nữa
+        registerRect.anchoredPosition = new Vector2(0, -100);
+        registerRect.sizeDelta = new Vector2(400, 100);
         registerButton = registerBtn.GetComponent<Button>();
 
         // Set font size cho register button text
         TextMeshProUGUI registerText = registerBtn.GetComponentInChildren<TextMeshProUGUI>();
         if (registerText != null)
-            registerText.fontSize = 36; // Tăng font size lớn hơn nữa
+            registerText.fontSize = 36;
 
         // Create Login Button - Lớn hơn nữa
         GameObject loginBtn = CreateButton("LoginButton", "ALREADY HAVE ACCOUNT", mainPanel.transform);
         RectTransform loginRect = loginBtn.GetComponent<RectTransform>();
-        loginRect.anchoredPosition = new Vector2(0, -300); // Điều chỉnh vị trí
-        loginRect.sizeDelta = new Vector2(400, 90); // Tăng kích thước lớn hơn nữa
+        loginRect.anchoredPosition = new Vector2(0, -250);
+        loginRect.sizeDelta = new Vector2(400, 90);
         goToLoginButton = loginBtn.GetComponent<Button>();
         Button loginBtnComp = loginBtn.GetComponent<Button>();
         ColorBlock loginColors = loginBtnComp.colors;
-        loginColors.normalColor = new Color(0.2f, 0.6f, 1f, 1f);
+        loginColors.normalColor = new Color(0.4f, 0.8f, 0.4f, 1f);
         loginBtnComp.colors = loginColors;
 
         // Set font size cho login button text
         TextMeshProUGUI loginText = loginBtn.GetComponentInChildren<TextMeshProUGUI>();
         if (loginText != null)
-            loginText.fontSize = 32; // Tăng font size lớn hơn nữa
+            loginText.fontSize = 32;
+
+        // Create API Status Label - Lớn hơn nữa
+        GameObject apiStatusLabelGO = CreateText("APIStatusLabel", "API Status:", mainPanel.transform, 28);
+        RectTransform apiStatusLabelRect = apiStatusLabelGO.GetComponent<RectTransform>();
+        apiStatusLabelRect.anchoredPosition = new Vector2(0, -350);
+        apiStatusLabelRect.sizeDelta = new Vector2(400, 60);
+        apiStatusLabel = apiStatusLabelGO.GetComponent<TextMeshProUGUI>();
+        apiStatusLabel.color = Color.yellow;
 
         // Create Status Text - Lớn hơn nữa
-        GameObject statusTextGO = CreateText("StatusText", "", mainPanel.transform, 28); // Tăng từ 18 lên 28
-        RectTransform statusRect = statusTextGO.GetComponent<RectTransform>();
-        statusRect.anchoredPosition = new Vector2(0, -400); // Điều chỉnh vị trí
-        statusRect.sizeDelta = new Vector2(800, 120); // Tăng kích thước lớn hơn nữa
+        GameObject statusTextGO = CreateText("StatusText", "", mainPanel.transform, 24);
+        RectTransform statusTextRect = statusTextGO.GetComponent<RectTransform>();
+        statusTextRect.anchoredPosition = new Vector2(0, -420);
+        statusTextRect.sizeDelta = new Vector2(800, 80);
         statusText = statusTextGO.GetComponent<TextMeshProUGUI>();
-        statusText.color = Color.red;
+        statusText.color = Color.white;
+        statusText.alignment = TextAlignmentOptions.Center;
 
         // Create Loading Panel
         GameObject loadingPanelGO = CreateUIElement("LoadingPanel", canvasGO.transform);
-        Image loadingImage = loadingPanelGO.AddComponent<Image>();
-        loadingImage.color = new Color(0, 0, 0, 0.7f);
+        Image loadingBgImage = loadingPanelGO.AddComponent<Image>();
+        loadingBgImage.color = new Color(0, 0, 0, 0.8f);
         SetFullScreen(loadingPanelGO.GetComponent<RectTransform>());
-        loadingPanelGO.SetActive(false);
+
+        // Create Loading Text
+        GameObject loadingTextGO = CreateText("LoadingText", "Loading...", loadingPanelGO.transform, 48);
+        RectTransform loadingTextRect = loadingTextGO.GetComponent<RectTransform>();
+        loadingTextRect.anchoredPosition = new Vector2(0, 0);
+        loadingTextRect.sizeDelta = new Vector2(400, 100);
+        TextMeshProUGUI loadingText = loadingTextGO.GetComponent<TextMeshProUGUI>();
+        loadingText.color = Color.white;
+
         loadingPanel = loadingPanelGO;
+        loadingPanel.SetActive(false);
 
-        // Create loading text với font lớn hơn nữa
-        GameObject loadingText = CreateText("LoadingText", "Processing...", loadingPanelGO.transform, 40); // Tăng từ 24 lên 40
-        loadingText.GetComponent<TextMeshProUGUI>().color = Color.white;
-
-        // Setup APIManager reference
-        if (apiManager == null)
-        {
-            // Tìm APIManager hiện có trước
-            apiManager = FindFirstObjectByType<APIManager>();
-            if (apiManager == null)
-            {
-                // Chỉ tạo mới nếu không tìm thấy
-                GameObject apiManagerGO = new GameObject("APIManager");
-                apiManager = apiManagerGO.AddComponent<APIManager>();
-                Debug.Log("[RegisterUISetup] APIManager created.");
-            }
-            else
-            {
-                Debug.Log("[RegisterUISetup] Found existing APIManager.");
-            }
-        }
-
-        Debug.Log("Register UI created successfully!");
+        Debug.Log("Register UI created successfully.");
     }
 
     private void SetupUI()
@@ -260,8 +258,39 @@ public class RegisterUISetup : MonoBehaviour
         if (statusText != null)
             statusText.text = "";
 
+        if (apiStatusLabel != null)
+            apiStatusLabel.text = "API Status: Ready";
+
         if (loadingPanel != null)
             loadingPanel.SetActive(false);
+
+        // Update API status
+        UpdateAPIStatus();
+    }
+
+    private void UpdateAPIStatus()
+    {
+        if (apiStatusLabel != null)
+        {
+            if (apiManager != null)
+            {
+                if (apiManager.HasValidToken())
+                {
+                    apiStatusLabel.text = "API Status: Connected";
+                    apiStatusLabel.color = Color.green;
+                }
+                else
+                {
+                    apiStatusLabel.text = "API Status: Ready";
+                    apiStatusLabel.color = Color.yellow;
+                }
+            }
+            else
+            {
+                apiStatusLabel.text = "API Status: Not Found";
+                apiStatusLabel.color = Color.red;
+            }
+        }
     }
 
     public void OnRegisterClick()
@@ -299,7 +328,6 @@ public class RegisterUISetup : MonoBehaviour
 
         if (apiManager != null)
         {
-            Debug.Log("[RegisterUISetup] Calling APIManager.Register...");
             apiManager.Register(email, password, confirmPassword, OnRegisterComplete);
         }
         else
@@ -323,11 +351,7 @@ public class RegisterUISetup : MonoBehaviour
 
         if (isRegisterSuccess)
         {
-            ShowStatus("Account created successfully!");
-            Debug.Log($"[RegisterUISetup] Registration successful! User ID: {response?.user?.id}");
-
             // Auto login after successful registration
-            ShowStatus("Logging in...");
             ShowLoading(true);
 
             if (apiManager != null)
@@ -348,33 +372,24 @@ public class RegisterUISetup : MonoBehaviour
         
         if (response != null && !string.IsNullOrEmpty(response.token))
         {
-            ShowStatus("Login successful! Redirecting...");
-            
-            Debug.Log($"[RegisterUISetup] Auto login successful! Token: {response.token.Substring(0, 20)}...");
-            
             // Lưu email để ghi nhớ cho lần đăng nhập tiếp theo
             string email = emailInput?.text ?? "";
             if (!string.IsNullOrEmpty(email))
             {
                 apiManager.SaveRememberedEmail(email);
-                Debug.Log($"[RegisterUISetup] Saved remembered email: {email}");
             }
             
             // Gọi API tạo account cho user
-            ShowStatus("Setting up user profile...");
             ShowLoading(true);
             apiManager.RegisterProfileForCurrentUser((profileResponse) =>
             {
                 ShowLoading(false);
                 if (profileResponse != null && profileResponse.status == "success")
                 {
-                    Debug.Log("[RegisterUISetup] User profile registered successfully!");
-                    // Load main menu scene nếu tạo profile thành công
                     Invoke(nameof(LoadMainMenuScene), 1f);
                 }
                 else
                 {
-                    Debug.LogWarning($"[RegisterUISetup] Failed to register user profile: {profileResponse?.message ?? "Unknown error"}");
                     ShowStatus("Failed to setup user profile!");
                 }
             });
@@ -450,11 +465,103 @@ public class RegisterUISetup : MonoBehaviour
         ShowLoading(false);
     }
 
-    // For testing purposes - can be called from inspector
     [ContextMenu("Go to Login")]
     public void TestGoToLogin()
     {
         OnGoToLoginClick();
+    }
+
+    [ContextMenu("Update API Status")]
+    public void TestUpdateAPIStatus()
+    {
+        UpdateAPIStatus();
+    }
+
+    [ContextMenu("Test Register")]
+    public void TestRegister()
+    {
+        if (emailInput != null && passwordInput != null && confirmPasswordInput != null)
+        {
+            emailInput.text = "test@example.com";
+            passwordInput.text = "password123";
+            confirmPasswordInput.text = "password123";
+            OnRegisterClick();
+        }
+        else
+        {
+            Debug.LogWarning("[RegisterUISetup] UI elements not found for test!");
+        }
+    }
+
+    [ContextMenu("Test Register Direct")]
+    public void TestRegisterDirect()
+    {
+        if (apiManager != null)
+        {
+            ShowLoading(true);
+            ShowStatus("Testing registration...");
+            apiManager.Register("test@example.com", "password123", "password123", (response) =>
+            {
+                ShowLoading(false);
+                if (response != null)
+                {
+                    ShowStatus($"Test registration result: {response.message}");
+                }
+                else
+                {
+                    ShowStatus("Test registration failed!");
+                }
+            });
+        }
+        else
+        {
+            ShowStatus("APIManager not found for test!");
+        }
+    }
+
+    [ContextMenu("Debug Token Info")]
+    public void DebugTokenInfo()
+    {
+        if (apiManager != null)
+        {
+            string token = apiManager.GetAuthToken();
+            if (!string.IsNullOrEmpty(token))
+            {
+                Debug.Log($"[RegisterUISetup] Current token: {token.Substring(0, Mathf.Min(20, token.Length))}...");
+                Debug.Log($"[RegisterUISetup] Token length: {token.Length}");
+                Debug.Log($"[RegisterUISetup] Has valid token: {apiManager.HasValidToken()}");
+            }
+            else
+            {
+                Debug.Log("[RegisterUISetup] No token found.");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("[RegisterUISetup] APIManager not found for debug!");
+        }
+    }
+
+    [ContextMenu("Compare Token Info")]
+    public void CompareTokenInfo()
+    {
+        if (apiManager != null)
+        {
+            string token = apiManager.GetAuthToken();
+            bool hasValidToken = apiManager.HasValidToken();
+            
+            Debug.Log($"[RegisterUISetup] Token exists: {!string.IsNullOrEmpty(token)}");
+            Debug.Log($"[RegisterUISetup] Has valid token: {hasValidToken}");
+            
+            if (!string.IsNullOrEmpty(token))
+            {
+                Debug.Log($"[RegisterUISetup] Token preview: {token.Substring(0, Mathf.Min(20, token.Length))}...");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("[RegisterUISetup] APIManager not found for comparison!");
+        }
     }
 
     GameObject CreateUIElement(string name, Transform parent)

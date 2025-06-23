@@ -66,7 +66,6 @@ public class PlayerItemManager : SaiSingleton<PlayerItemManager>
     {
         if (autoLoad)
         {
-            if (showDebugLog) Debug.Log("[PlayerItemManager] AutoLoad: Authentication success, loading player items");
             GetPlayerItems();
         }
     }
@@ -173,7 +172,6 @@ public class PlayerItemManager : SaiSingleton<PlayerItemManager>
             
             if (APIManager.Instance != null && APIManager.Instance.HasValidToken() && playerItems.Count == 0)
             {
-                if (showDebugLog) Debug.Log("[PlayerItemManager] Periodic check: Found valid token but no items loaded, loading now");
                 GetPlayerItems();
             }
         }

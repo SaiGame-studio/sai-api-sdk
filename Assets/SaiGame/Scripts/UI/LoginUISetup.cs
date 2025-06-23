@@ -340,7 +340,6 @@ public class LoginUISetup : MonoBehaviour
 
         if (apiManager != null)
         {
-            Debug.Log("[LoginUISetup] Calling APIManager.LoginWithToken...");
             apiManager.LoginWithToken(email, password, OnLoginComplete);
         }
         else
@@ -356,10 +355,6 @@ public class LoginUISetup : MonoBehaviour
         
         if (response != null && !string.IsNullOrEmpty(response.token))
         {
-            ShowStatus("Login successful!");
-            
-            Debug.Log($"[LoginUISetup] Login successful! Token: {response.token.Substring(0, 20)}..., Expires At: {response.expires_at}, Expires In: {response.expires_in}");
-            
             // Debug thông tin token sau khi login
             DebugTokenInfo();
             
@@ -374,16 +369,12 @@ public class LoginUISetup : MonoBehaviour
                 Debug.Log($"[LoginUISetup] Saved remembered email: {email}");
             }
             
-            // Gọi API tạo account cho user
-            ShowStatus("Registering user profile...");
             ShowLoading(true);
             apiManager.RegisterProfileForCurrentUser((profileResponse) =>
             {
                 ShowLoading(false);
                 if (profileResponse != null && profileResponse.status == "success")
                 {
-                    Debug.Log("[LoginUISetup] User profile registered successfully!");
-                    // Load game scene nếu tạo profile thành công
                     Invoke(nameof(LoadGameScene), 1f);
                 }
                 else
@@ -427,7 +418,6 @@ public class LoginUISetup : MonoBehaviour
             
             // Force update token display info
             apiManager.UpdateTokenDisplayInfo();
-            Debug.Log("[LoginUISetup] Forced update of token display info.");
         }
     }
 
@@ -436,10 +426,6 @@ public class LoginUISetup : MonoBehaviour
         if (!string.IsNullOrEmpty(registerSceneName))
         {
             SceneManager.LoadScene(registerSceneName);
-        }
-        else
-        {
-            ShowStatus("Register scene not configured!");
         }
     }
 

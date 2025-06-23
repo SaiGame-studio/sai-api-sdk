@@ -80,7 +80,6 @@ public class ShopManager : SaiSingleton<ShopManager>
     {
         if (autoLoad)
         {
-            if (showDebugLog) Debug.Log("[ShopManager] AutoLoad: Authentication success, loading shop list");
             GetShopList();
         }
     }

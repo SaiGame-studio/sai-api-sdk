@@ -105,12 +105,6 @@ public class PlayerInventoryUISetup : MonoBehaviour
             
             // Reset selected inventory
             selectedInventory = null;
-            
-            Debug.Log($"[PlayerInventoryUISetup] Dummy data cleared: {clearedInventorySelection} inventory selection items, {clearedInventoryItems} Grid Items");
-        }
-        else
-        {
-            Debug.Log("[PlayerInventoryUISetup] Editor mode - keeping dummy data for preview");
         }
     }
 
@@ -124,7 +118,6 @@ public class PlayerInventoryUISetup : MonoBehaviour
         if (autoSetup)
         {
             CreateInventoryUI();
-            Debug.Log("[PlayerInventoryUISetup] Auto setup enabled - UI created");
         }
 
         SetupEventListeners();
@@ -167,13 +160,6 @@ public class PlayerInventoryUISetup : MonoBehaviour
         if (PlayerInventoryManager.Instance != null)
         {
             PlayerInventoryManager.Instance.OnInventorySelectedFromDropdown += OnInventorySelectedFromDropdown;
-            Debug.Log("[PlayerInventoryUISetup] Registered for OnInventorySelectedFromDropdown event");
-            
-            // Debug: Kiểm tra trạng thái hiện tại của PlayerInventoryManager
-            Debug.Log($"[PlayerInventoryUISetup] Current PlayerInventoryManager state: " +
-                     $"SelectedInventoryId='{PlayerInventoryManager.Instance.GetSelectedInventoryId()}', " +
-                     $"InventoryItemsCount={PlayerInventoryManager.Instance.InventoryItems.Count}, " +
-                     $"FilteredInventoryItemsCount={PlayerInventoryManager.Instance.FilteredInventoryItems.Count}");
         }
         else
         {
@@ -374,26 +360,18 @@ public class PlayerInventoryUISetup : MonoBehaviour
         // Display ALL items from the selected inventory
         if (items != null && items.Count > 0)
         {
-            ShowStatus($"Displaying ALL {items.Count} items from '{currentInventoryName}'");
-            
             // Populate Grid with ALL items
             PopulateAllInventoryItems(items);
-            
-            // Debug log để xác nhận tất cả items được hiển thị
-            Debug.Log($"[PlayerInventoryUISetup] SUCCESS: Displayed ALL {items.Count} items from inventory '{currentInventoryName}' on Grid Items");
             
             // Log chi tiết từng item để debug
             for (int i = 0; i < items.Count; i++)
             {
                 var item = items[i];
-                Debug.Log($"  Item {i+1}: {item.name} (Amount: {item.amount}, Type: {item.type})");
             }
         }
         else
         {
-            ShowStatus($"No items found in '{currentInventoryName}'");
             ClearInventoryItems();
-            Debug.Log($"[PlayerInventoryUISetup] No items found in inventory '{currentInventoryName}'");
         }
     }
 
@@ -457,9 +435,6 @@ public class PlayerInventoryUISetup : MonoBehaviour
                 Debug.LogError($"[PlayerInventoryUISetup] Error creating Grid Item for {item.name}: {ex.Message}");
             }
         }
-        
-        ShowStatus($"Displaying ALL {itemCount} items from '{selectedInventoryName}'");
-        Debug.Log($"[PlayerInventoryUISetup] PopulateAllInventoryItems: Successfully created {itemCount} Grid Items for '{selectedInventoryName}'");
     }
 
     /// <summary>
@@ -524,14 +499,9 @@ public class PlayerInventoryUISetup : MonoBehaviour
             return;
         }
 
-        ShowStatus($"Selected Grid Item: {item.name} (x{item.amount}) - Type: {item.type ?? "N/A"}");
-        
         // Enable Use Item button
         if (useItemButton != null)
             useItemButton.interactable = true;
-        
-        // Debug log để tracking
-        Debug.Log($"[PlayerInventoryUISetup] Grid Item selected: {item.name} (ID: {item.id}, Amount: {item.amount})");
     }
 
     /// <summary>
@@ -576,7 +546,7 @@ public class PlayerInventoryUISetup : MonoBehaviour
 
     public void OnUseItemClick()
     {
-        ShowStatus("Use item not implemented yet");
+        SceneController.LoadScene(myItemSceneName);
     }
 
     private void ClearInventorySelectionItems()
@@ -1093,7 +1063,7 @@ public class PlayerInventoryUISetup : MonoBehaviour
         selectedInventory = null;
         if (useItemButton != null)
         {
-            useItemButton.interactable = false;
+            useItemButton.interactable = true;
         }
         
 #if UNITY_EDITOR
@@ -1394,7 +1364,7 @@ public class PlayerInventoryUISetup : MonoBehaviour
         GameObject backButtonGO = CreateButton("BackButton", "Main Menu", mainPanel.transform);
         backToMainMenuButton = backButtonGO.GetComponent<Button>();
         
-        // Style the back to main menu button - Blue color like ShopUISetup
+        // Style the back to main menu button - Unified blue color
         TextMeshProUGUI backButtonText = backToMainMenuButton.GetComponentInChildren<TextMeshProUGUI>();
         if (backButtonText != null)
         {
@@ -1405,7 +1375,7 @@ public class PlayerInventoryUISetup : MonoBehaviour
         Image backImage = backToMainMenuButton.GetComponent<Image>();
         if (backImage != null)
         {
-            backImage.color = new Color(0.2f, 0.6f, 1f, 1f); // Blue background
+            backImage.color = new Color(0.2f, 0.6f, 1f, 1f); // Unified blue background
         }
         ColorBlock backCb = backToMainMenuButton.colors;
         backCb.normalColor = new Color(0.2f, 0.6f, 1f, 1f);
@@ -1424,7 +1394,7 @@ public class PlayerInventoryUISetup : MonoBehaviour
         GameObject shopsButtonGO = CreateButton("ShopsButton", "Shops", mainPanel.transform);
         shopsButton = shopsButtonGO.GetComponent<Button>();
         
-        // Style the shops button - Purple color like My Item button in ShopUISetup
+        // Style the shops button - Unified blue color
         TextMeshProUGUI shopsButtonText = shopsButton.GetComponentInChildren<TextMeshProUGUI>();
         if (shopsButtonText != null)
         {
@@ -1434,12 +1404,12 @@ public class PlayerInventoryUISetup : MonoBehaviour
         Image shopsImage = shopsButton.GetComponent<Image>();
         if (shopsImage != null)
         {
-            shopsImage.color = new Color(0.8f, 0.4f, 0.8f, 1f); // Purple background
+            shopsImage.color = new Color(0.2f, 0.6f, 1f, 1f); // Unified blue background
         }
         ColorBlock shopsCb = shopsButton.colors;
-        shopsCb.normalColor = new Color(0.8f, 0.4f, 0.8f, 1f);
-        shopsCb.highlightedColor = new Color(0.9f, 0.5f, 0.9f, 1f);
-        shopsCb.pressedColor = new Color(0.7f, 0.3f, 0.7f, 1f);
+        shopsCb.normalColor = new Color(0.2f, 0.6f, 1f, 1f);
+        shopsCb.highlightedColor = new Color(0.3f, 0.7f, 1f, 1f);
+        shopsCb.pressedColor = new Color(0.15f, 0.5f, 0.9f, 1f);
         shopsButton.colors = shopsCb;
         
         RectTransform shopsRect = shopsButton.GetComponent<RectTransform>();
@@ -1450,11 +1420,11 @@ public class PlayerInventoryUISetup : MonoBehaviour
         shopsRect.sizeDelta = new Vector2(150, 80);
 
         // Create Use Item button - moved to the right to avoid overlap
-        GameObject useButtonGO = CreateButton("UseItemButton", "Use Item", mainPanel.transform);
+        GameObject useButtonGO = CreateButton("UseItemButton", "My Item", mainPanel.transform);
         useItemButton = useButtonGO.GetComponent<Button>();
-        useItemButton.interactable = false;
+        useItemButton.interactable = true;
         
-        // Style the use item button - Green color like Inventory button in ShopUISetup
+        // Style the use item button - Unified blue color
         TextMeshProUGUI useButtonText = useItemButton.GetComponentInChildren<TextMeshProUGUI>();
         if (useButtonText != null)
         {
@@ -1464,12 +1434,12 @@ public class PlayerInventoryUISetup : MonoBehaviour
         Image useImage = useItemButton.GetComponent<Image>();
         if (useImage != null)
         {
-            useImage.color = new Color(0.4f, 0.8f, 0.4f, 1f); // Green background
+            useImage.color = new Color(0.2f, 0.6f, 1f, 1f); // Unified blue background
         }
         ColorBlock useCb = useItemButton.colors;
-        useCb.normalColor = new Color(0.4f, 0.8f, 0.4f, 1f);
-        useCb.highlightedColor = new Color(0.5f, 0.9f, 0.5f, 1f);
-        useCb.pressedColor = new Color(0.3f, 0.7f, 0.3f, 1f);
+        useCb.normalColor = new Color(0.2f, 0.6f, 1f, 1f);
+        useCb.highlightedColor = new Color(0.3f, 0.7f, 1f, 1f);
+        useCb.pressedColor = new Color(0.15f, 0.5f, 0.9f, 1f);
         useItemButton.colors = useCb;
         
         RectTransform useRect = useItemButton.GetComponent<RectTransform>();
@@ -1483,7 +1453,7 @@ public class PlayerInventoryUISetup : MonoBehaviour
         GameObject refreshButtonGO = CreateButton("RefreshButton", "Refresh", mainPanel.transform);
         refreshButton = refreshButtonGO.GetComponent<Button>();
         
-        // Style the refresh button - Green color like ShopUISetup
+        // Style the refresh button - Unified blue color
         TextMeshProUGUI refreshButtonText = refreshButton.GetComponentInChildren<TextMeshProUGUI>();
         if (refreshButtonText != null)
         {
@@ -1493,12 +1463,12 @@ public class PlayerInventoryUISetup : MonoBehaviour
         Image refreshImage = refreshButton.GetComponent<Image>();
         if (refreshImage != null)
         {
-            refreshImage.color = new Color(0.2f, 0.8f, 0.2f, 1f); // Green background
+            refreshImage.color = new Color(0.2f, 0.6f, 1f, 1f); // Unified blue background
         }
         ColorBlock cb = refreshButton.colors;
-        cb.normalColor = new Color(0.2f, 0.8f, 0.2f, 1f);
-        cb.highlightedColor = new Color(0.3f, 0.9f, 0.3f, 1f); // Lighter green on highlight
-        cb.pressedColor = new Color(0.15f, 0.7f, 0.15f, 1f); // Darker green on press
+        cb.normalColor = new Color(0.2f, 0.6f, 1f, 1f);
+        cb.highlightedColor = new Color(0.3f, 0.7f, 1f, 1f); // Lighter blue on highlight
+        cb.pressedColor = new Color(0.15f, 0.5f, 0.9f, 1f); // Darker blue on press
         refreshButton.colors = cb;
         
         RectTransform refreshRect = refreshButton.GetComponent<RectTransform>();
@@ -1807,8 +1777,6 @@ public class PlayerInventoryUISetup : MonoBehaviour
             PlayerInventoryManager.Instance.OnFilteredInventoryItemsChanged -= OnInventoriesLoaded;
             PlayerInventoryManager.Instance.OnInventoryItemsChanged -= OnInventoryItemsLoaded;
             PlayerInventoryManager.Instance.OnInventorySelectedFromDropdown -= OnInventorySelectedFromDropdown;
-            
-            Debug.Log("[PlayerInventoryUISetup] Unsubscribed from all PlayerInventoryManager events");
         }
     }
 

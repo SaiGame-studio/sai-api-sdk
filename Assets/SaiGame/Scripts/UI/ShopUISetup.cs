@@ -254,7 +254,7 @@ public class ShopUISetup : MonoBehaviour
         Image backImage = backToMainMenuButton.GetComponent<Image>();
         if (backImage != null)
         {
-            backImage.color = new Color(0.2f, 0.6f, 1f, 1f); // Blue background
+            backImage.color = new Color(0.2f, 0.6f, 1f, 1f); // Unified blue background
         }
         ColorBlock backCb = backToMainMenuButton.colors;
         backCb.normalColor = new Color(0.2f, 0.6f, 1f, 1f);
@@ -281,16 +281,16 @@ public class ShopUISetup : MonoBehaviour
             myItemButtonText.fontSize = 24;
         }
 
-        // Style the my item button
+        // Style the my item button - Unified blue color
         Image myItemImage = myItemButton.GetComponent<Image>();
         if (myItemImage != null)
         {
-            myItemImage.color = new Color(0.8f, 0.4f, 0.8f, 1f); // Purple background
+            myItemImage.color = new Color(0.2f, 0.6f, 1f, 1f); // Unified blue background
         }
         ColorBlock myItemCb = myItemButton.colors;
-        myItemCb.normalColor = new Color(0.8f, 0.4f, 0.8f, 1f);
-        myItemCb.highlightedColor = new Color(0.9f, 0.5f, 0.9f, 1f);
-        myItemCb.pressedColor = new Color(0.7f, 0.3f, 0.7f, 1f);
+        myItemCb.normalColor = new Color(0.2f, 0.6f, 1f, 1f);
+        myItemCb.highlightedColor = new Color(0.3f, 0.7f, 1f, 1f);
+        myItemCb.pressedColor = new Color(0.15f, 0.5f, 0.9f, 1f);
         myItemButton.colors = myItemCb;
 
         RectTransform myItemRect = myItemButton.GetComponent<RectTransform>();
@@ -313,16 +313,16 @@ public class ShopUISetup : MonoBehaviour
             inventoryButtonText.fontSize = 24;
         }
 
-        // Style the inventory button
+        // Style the inventory button - Unified blue color
         Image inventoryImage = inventoryButton.GetComponent<Image>();
         if (inventoryImage != null)
         {
-            inventoryImage.color = new Color(0.4f, 0.8f, 0.4f, 1f); // Green background
+            inventoryImage.color = new Color(0.2f, 0.6f, 1f, 1f); // Unified blue background
         }
         ColorBlock inventoryCb = inventoryButton.colors;
-        inventoryCb.normalColor = new Color(0.4f, 0.8f, 0.4f, 1f);
-        inventoryCb.highlightedColor = new Color(0.5f, 0.9f, 0.5f, 1f);
-        inventoryCb.pressedColor = new Color(0.3f, 0.7f, 0.3f, 1f);
+        inventoryCb.normalColor = new Color(0.2f, 0.6f, 1f, 1f);
+        inventoryCb.highlightedColor = new Color(0.3f, 0.7f, 1f, 1f);
+        inventoryCb.pressedColor = new Color(0.15f, 0.5f, 0.9f, 1f);
         inventoryButton.colors = inventoryCb;
 
         RectTransform inventoryRect = inventoryButton.GetComponent<RectTransform>();
@@ -337,11 +337,11 @@ public class ShopUISetup : MonoBehaviour
         GameObject buyItemButtonGO = CreateButton("BuyItemButton", "BUY ITEM", mainPanel.transform);
         buyItemButton = buyItemButtonGO.GetComponent<Button>();
         
-        // Set color cho buy item button
+        // Set color cho buy item button - Unified blue color
         ColorBlock buyItemColors = buyItemButton.colors;
-        buyItemColors.normalColor = new Color(0.8f, 0.4f, 0.2f, 1f); // Orange color
-        buyItemColors.highlightedColor = new Color(0.9f, 0.5f, 0.3f, 1f);
-        buyItemColors.pressedColor = new Color(0.7f, 0.3f, 0.1f, 1f);
+        buyItemColors.normalColor = new Color(0.2f, 0.6f, 1f, 1f); // Unified blue color
+        buyItemColors.highlightedColor = new Color(0.3f, 0.7f, 1f, 1f);
+        buyItemColors.pressedColor = new Color(0.15f, 0.5f, 0.9f, 1f);
         buyItemButton.colors = buyItemColors;
 
         // Set font size cho buy item button text
@@ -372,16 +372,16 @@ public class ShopUISetup : MonoBehaviour
             refreshButtonText.fontSize = 24;
         }
 
-        // Style the refresh button to look nicer
+        // Style the refresh button - Unified blue color
         Image refreshImage = refreshButton.GetComponent<Image>();
         if (refreshImage != null)
         {
-            refreshImage.color = new Color(0.2f, 0.8f, 0.2f, 1f); // Green background
+            refreshImage.color = new Color(0.2f, 0.6f, 1f, 1f); // Unified blue background
         }
         ColorBlock cb = refreshButton.colors;
-        cb.normalColor = new Color(0.2f, 0.8f, 0.2f, 1f);
-        cb.highlightedColor = new Color(0.3f, 0.9f, 0.3f, 1f); // Lighter green on highlight
-        cb.pressedColor = new Color(0.15f, 0.7f, 0.15f, 1f); // Darker green on press
+        cb.normalColor = new Color(0.2f, 0.6f, 1f, 1f);
+        cb.highlightedColor = new Color(0.3f, 0.7f, 1f, 1f); // Lighter blue on highlight
+        cb.pressedColor = new Color(0.15f, 0.5f, 0.9f, 1f); // Darker blue on press
         refreshButton.colors = cb;
 
         RectTransform refreshRect = refreshButton.GetComponent<RectTransform>();
@@ -402,10 +402,12 @@ public class ShopUISetup : MonoBehaviour
         backToShopSelectionRect.sizeDelta = new Vector2(200, 80);
         backToShopSelectionBtn.SetActive(false); // Initially hidden
 
-        // Set color cho back to shop selection button
+        // Set color cho back to shop selection button - Unified blue color
         Button backToShopSelectionBtnComp = backToShopSelectionBtn.GetComponent<Button>();
         ColorBlock backToShopSelectionColors = backToShopSelectionBtnComp.colors;
-        backToShopSelectionColors.normalColor = new Color(0.6f, 0.4f, 0.8f, 1f);
+        backToShopSelectionColors.normalColor = new Color(0.2f, 0.6f, 1f, 1f); // Unified blue color
+        backToShopSelectionColors.highlightedColor = new Color(0.3f, 0.7f, 1f, 1f);
+        backToShopSelectionColors.pressedColor = new Color(0.15f, 0.5f, 0.9f, 1f);
         backToShopSelectionBtnComp.colors = backToShopSelectionColors;
 
         // Set font size cho back to shop selection button text

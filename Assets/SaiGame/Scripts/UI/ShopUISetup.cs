@@ -30,6 +30,7 @@ public class ShopUISetup : MonoBehaviour
     [Header("Scene Management")]
     public string mainMenuSceneName = SceneNames.MAIN_MENU;
     public string myItemSceneName = SceneNames.MY_ITEMS;
+    public string inventorySceneName = SceneNames.MY_INVENTORY;
 
     [Header("Dummy Data (Editor Only)")]
     public bool showDummyData = true;
@@ -300,7 +301,39 @@ public class ShopUISetup : MonoBehaviour
         myItemRect.anchoredPosition = new Vector2(530, -20); 
         myItemRect.sizeDelta = new Vector2(150, 80);
 
-        // Create Buy Item Button and position it to the right of the My Item button
+        // Create Inventory button and position it to the right of the My Item button
+        GameObject inventoryButtonGO = CreateButton("InventoryButton", "Inventory", mainPanel.transform);
+        Button inventoryButton = inventoryButtonGO.GetComponent<Button>();
+        
+        // Center the text in the inventory button
+        TextMeshProUGUI inventoryButtonText = inventoryButton.GetComponentInChildren<TextMeshProUGUI>();
+        if (inventoryButtonText != null)
+        {
+            inventoryButtonText.alignment = TextAlignmentOptions.Center;
+            inventoryButtonText.fontSize = 24;
+        }
+
+        // Style the inventory button
+        Image inventoryImage = inventoryButton.GetComponent<Image>();
+        if (inventoryImage != null)
+        {
+            inventoryImage.color = new Color(0.4f, 0.8f, 0.4f, 1f); // Green background
+        }
+        ColorBlock inventoryCb = inventoryButton.colors;
+        inventoryCb.normalColor = new Color(0.4f, 0.8f, 0.4f, 1f);
+        inventoryCb.highlightedColor = new Color(0.5f, 0.9f, 0.5f, 1f);
+        inventoryCb.pressedColor = new Color(0.3f, 0.7f, 0.3f, 1f);
+        inventoryButton.colors = inventoryCb;
+
+        RectTransform inventoryRect = inventoryButton.GetComponent<RectTransform>();
+        inventoryRect.anchorMin = new Vector2(0, 1);
+        inventoryRect.anchorMax = new Vector2(0, 1);
+        inventoryRect.pivot = new Vector2(0, 1);
+        // Position next to the my item button: my item pos x (530) + my item width (150) + spacing (10)
+        inventoryRect.anchoredPosition = new Vector2(690, -20); 
+        inventoryRect.sizeDelta = new Vector2(150, 80);
+
+        // Create Buy Item Button and position it to the right of the Inventory button
         GameObject buyItemButtonGO = CreateButton("BuyItemButton", "BUY ITEM", mainPanel.transform);
         buyItemButton = buyItemButtonGO.GetComponent<Button>();
         
@@ -323,8 +356,8 @@ public class ShopUISetup : MonoBehaviour
         buyItemRect.anchorMin = new Vector2(0, 1);
         buyItemRect.anchorMax = new Vector2(0, 1);
         buyItemRect.pivot = new Vector2(0, 1);
-        // Position next to the my item button: my item pos x (530) + my item width (150) + spacing (10)
-        buyItemRect.anchoredPosition = new Vector2(690, -20); 
+        // Position next to the inventory button: inventory pos x (690) + inventory width (150) + spacing (10)
+        buyItemRect.anchoredPosition = new Vector2(850, -20); 
         buyItemRect.sizeDelta = new Vector2(200, 80);
 
         // Create Refresh button and position it at top-right corner
@@ -662,6 +695,11 @@ public class ShopUISetup : MonoBehaviour
         Button myItemBtn = GameObject.Find("MyItemButton")?.GetComponent<Button>();
         if (myItemBtn != null)
             myItemBtn.onClick.AddListener(OnMyItemClick);
+
+        // Find and setup Inventory button
+        Button inventoryBtn = GameObject.Find("InventoryButton")?.GetComponent<Button>();
+        if (inventoryBtn != null)
+            inventoryBtn.onClick.AddListener(OnInventoryClick);
 
         // Find and setup back to shop selection button
         Button backToShopSelectionBtn = GameObject.Find("BackToShopSelectionButton")?.GetComponent<Button>();
@@ -1054,6 +1092,18 @@ public class ShopUISetup : MonoBehaviour
         else
         {
             Debug.LogWarning("[ShopUISetup] My Item scene name not set");
+        }
+    }
+
+    public void OnInventoryClick()
+    {
+        if (!string.IsNullOrEmpty(inventorySceneName))
+        {
+            SceneController.LoadScene(inventorySceneName);
+        }
+        else
+        {
+            Debug.LogWarning("[ShopUISetup] Inventory scene name not set");
         }
     }
 

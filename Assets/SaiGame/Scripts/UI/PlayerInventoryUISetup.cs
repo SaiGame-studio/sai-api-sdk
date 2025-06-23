@@ -4,6 +4,7 @@ using UnityEngine.EventSystems;
 using TMPro;
 using System.Collections.Generic;
 using System.Collections;
+using System.Linq;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -35,12 +36,14 @@ public class PlayerInventoryUISetup : MonoBehaviour
     [Header("UI References - Controls")]
     [SerializeField] public Button refreshButton;
     [SerializeField] public Button backToMainMenuButton;
+    [SerializeField] public Button shopsButton;
     [SerializeField] public Button useItemButton;
     [SerializeField] public TextMeshProUGUI statusText;
     [SerializeField] public GameObject loadingPanel;
 
     [Header("Scene Management")]
     public string mainMenuSceneName = SceneNames.MAIN_MENU;
+    public string shopSceneName = SceneNames.SHOP;
     public string myItemSceneName = SceneNames.MY_ITEMS;
 
     [Header("Dummy Data")]
@@ -128,6 +131,9 @@ public class PlayerInventoryUISetup : MonoBehaviour
         
         // Delay một frame để đảm bảo tất cả components đã được khởi tạo
         StartCoroutine(DelayedLoadInventoryData());
+        
+        // Kiểm tra xem có data sẵn từ PlayerInventoryManager không
+        CheckForExistingInventoryData();
     }
 
     private void OnValidate()
@@ -150,6 +156,9 @@ public class PlayerInventoryUISetup : MonoBehaviour
         if (backToMainMenuButton != null)
             backToMainMenuButton.onClick.AddListener(OnBackToMainMenuClick);
         
+        if (shopsButton != null)
+            shopsButton.onClick.AddListener(OnShopsClick);
+        
         if (useItemButton != null)
             useItemButton.onClick.AddListener(OnUseItemClick);
 
@@ -159,6 +168,16 @@ public class PlayerInventoryUISetup : MonoBehaviour
         {
             PlayerInventoryManager.Instance.OnInventorySelectedFromDropdown += OnInventorySelectedFromDropdown;
             Debug.Log("[PlayerInventoryUISetup] Registered for OnInventorySelectedFromDropdown event");
+            
+            // Debug: Kiểm tra trạng thái hiện tại của PlayerInventoryManager
+            Debug.Log($"[PlayerInventoryUISetup] Current PlayerInventoryManager state: " +
+                     $"SelectedInventoryId='{PlayerInventoryManager.Instance.GetSelectedInventoryId()}', " +
+                     $"InventoryItemsCount={PlayerInventoryManager.Instance.InventoryItems.Count}, " +
+                     $"FilteredInventoryItemsCount={PlayerInventoryManager.Instance.FilteredInventoryItems.Count}");
+        }
+        else
+        {
+            Debug.LogWarning("[PlayerInventoryUISetup] PlayerInventoryManager.Instance is null during SetupEventListeners!");
         }
     }
 
@@ -300,6 +319,14 @@ public class PlayerInventoryUISetup : MonoBehaviour
         if (PlayerInventoryManager.Instance != null)
         {
             PlayerInventoryManager.Instance.OnInventoryItemsChanged += OnInventoryItemsLoaded;
+            
+            // Kiểm tra xem data đã có sẵn chưa (tránh race condition)
+            if (PlayerInventoryManager.Instance.InventoryItems.Count > 0 && 
+                PlayerInventoryManager.Instance.GetSelectedInventoryId() == inventory.id)
+            {
+                // Data đã có sẵn, gọi callback ngay lập tức
+                OnInventoryItemsLoaded(PlayerInventoryManager.Instance.InventoryItems);
+            }
         }
         else
         {
@@ -338,11 +365,8 @@ public class PlayerInventoryUISetup : MonoBehaviour
     {
         ShowLoading(false); // Hide loading panel
         
-        // Unsubscribe from event to prevent memory leaks
-        if (PlayerInventoryManager.Instance != null)
-        {
-            PlayerInventoryManager.Instance.OnInventoryItemsChanged -= OnInventoryItemsLoaded;
-        }
+        // KHÔNG unsubscribe ngay lập tức để tránh mất event
+        // Chỉ unsubscribe khi có inventory mới được chọn trong OnInventorySelectedFromDropdown
         
         // Get inventory name once to avoid scope conflicts
         string currentInventoryName = selectedInventory?.name ?? "Selected Inventory";
@@ -543,6 +567,11 @@ public class PlayerInventoryUISetup : MonoBehaviour
     public void OnBackToMainMenuClick()
     {
         SceneController.LoadScene(mainMenuSceneName);
+    }
+
+    public void OnShopsClick()
+    {
+        SceneController.LoadScene(shopSceneName);
     }
 
     public void OnUseItemClick()
@@ -795,6 +824,7 @@ public class PlayerInventoryUISetup : MonoBehaviour
         inventoryItemPrefab = null;
         refreshButton = null;
         backToMainMenuButton = null;
+        shopsButton = null;
         useItemButton = null;
         statusText = null;
         loadingPanel = null;
@@ -1157,88 +1187,203 @@ public class PlayerInventoryUISetup : MonoBehaviour
     [ContextMenu("Debug Current State")]
     public void DebugCurrentState()
     {
-        Debug.Log("=== PlayerInventoryUISetup Current State ===");
-        Debug.Log($"Auto Setup: {autoSetup}");
-        Debug.Log($"Selected Inventory: {selectedInventory?.name ?? "None"}");
-        Debug.Log($"Grid Items Count: {inventoryItems.Count}");
-        Debug.Log($"Inventory Selection Count: {inventorySelectionItems.Count}");
-        Debug.Log($"Prefab Available: {inventoryItemPrefab != null}");
-        Debug.Log($"Container Available: {inventoryItemContainer != null}");
-        Debug.Log($"InventoryItemsPanel Available: {inventoryItemsPanel != null}");
-        Debug.Log($"InventoryScrollRect Available: {inventoryScrollRect != null}");
+        Debug.Log("=== PlayerInventoryUISetup Debug State ===");
         
-        // Check UI hierarchy
-        Canvas canvas = FindFirstObjectByType<Canvas>();
-        Debug.Log($"Canvas Available: {canvas != null}");
+        // Debug UI state
+        Debug.Log($"UI State: selectedInventory={(selectedInventory?.name ?? "null")}, " +
+                 $"inventoryItems.Count={inventoryItems.Count}, " +
+                 $"inventorySelectionItems.Count={inventorySelectionItems.Count}");
         
-        if (inventoryItemContainer != null)
-        {
-            Debug.Log($"Container Active: {inventoryItemContainer.gameObject.activeSelf}");
-            Debug.Log($"Container Children: {inventoryItemContainer.childCount}");
-            
-            // List all children in container
-            for (int i = 0; i < inventoryItemContainer.childCount; i++)
-            {
-                Transform child = inventoryItemContainer.GetChild(i);
-                Debug.Log($"  Child {i}: {child.name} (Active: {child.gameObject.activeSelf})");
-            }
-        }
-        
+        // Debug PlayerInventoryManager state
         if (PlayerInventoryManager.Instance != null)
         {
-            Debug.Log($"PlayerInventoryManager Available: True");
-            Debug.Log($"Filtered Inventories: {PlayerInventoryManager.Instance.FilteredInventoryItems.Count}");
-            Debug.Log($"Items in Selected Inventory: {PlayerInventoryManager.Instance.InventoryItems.Count}");
+            Debug.Log($"PlayerInventoryManager State: " +
+                     $"SelectedInventoryId='{PlayerInventoryManager.Instance.GetSelectedInventoryId()}', " +
+                     $"SelectedInventoryName='{PlayerInventoryManager.Instance.GetSelectedInventoryName()}', " +
+                     $"InventoryItemsCount={PlayerInventoryManager.Instance.InventoryItems.Count}, " +
+                     $"FilteredInventoryItemsCount={PlayerInventoryManager.Instance.FilteredInventoryItems.Count}, " +
+                     $"IsLoading={PlayerInventoryManager.Instance.IsLoadingInventoryItems()}");
+            
+            // Debug inventory items detail
+            if (PlayerInventoryManager.Instance.InventoryItems.Count > 0)
+            {
+                Debug.Log("Current Inventory Items:");
+                for (int i = 0; i < PlayerInventoryManager.Instance.InventoryItems.Count; i++)
+                {
+                    var item = PlayerInventoryManager.Instance.InventoryItems[i];
+                    Debug.Log($"  {i+1}. {item.name} (Amount: {item.amount}, Type: {item.type})");
+                }
+            }
         }
         else
         {
-            Debug.Log("PlayerInventoryManager Available: False");
+            Debug.LogWarning("PlayerInventoryManager.Instance is null!");
         }
-        Debug.Log("===========================================");
+        
+        // Debug APIManager state
+        if (APIManager.Instance != null)
+        {
+            Debug.Log($"APIManager State: HasValidToken={APIManager.Instance.HasValidToken()}");
+        }
+        else
+        {
+            Debug.LogWarning("APIManager.Instance is null!");
+        }
+        
+        Debug.Log("=== End Debug State ===");
     }
 
-    [ContextMenu("Force Create UI & Test Grid Items")]
-    public void ForceCreateUIAndTestGridItems()
+    [ContextMenu("Force Refresh Inventory Data")]
+    public void ForceRefreshInventoryData()
     {
-        Debug.Log("[PlayerInventoryUISetup] Force creating UI and testing Grid Items...");
+        Debug.Log("[PlayerInventoryUISetup] Force refreshing inventory data...");
         
-        // Force create UI if not exists
-        if (inventoryItemPrefab == null || inventoryItemContainer == null)
+        if (PlayerInventoryManager.Instance != null)
         {
-            Debug.Log("[PlayerInventoryUISetup] UI components missing, creating UI...");
-            CreateInventoryUI();
+            // Force refresh từ PlayerItemManager
+            if (PlayerItemManager.Instance != null)
+            {
+                PlayerItemManager.Instance.GetPlayerItems((items) => {
+                    Debug.Log($"[PlayerInventoryUISetup] PlayerItems refreshed: {items.Count} items");
+                    
+                    // Force refresh inventory
+                    PlayerInventoryManager.Instance.RefreshInventory((inventories) => {
+                        Debug.Log($"[PlayerInventoryUISetup] Inventories refreshed: {inventories.Count} inventories");
+                        
+                        // Nếu có inventory được chọn, force load items
+                        if (!string.IsNullOrEmpty(PlayerInventoryManager.Instance.GetSelectedInventoryId()))
+                        {
+                            Debug.Log($"[PlayerInventoryUISetup] Force loading items for selected inventory: {PlayerInventoryManager.Instance.GetSelectedInventoryName()}");
+                            PlayerInventoryManager.Instance.LoadInventoryItems(PlayerInventoryManager.Instance.GetSelectedInventoryId());
+                        }
+                    });
+                });
+            }
         }
+    }
+
+    [ContextMenu("Test Event Flow")]
+    public void TestEventFlow()
+    {
+        Debug.Log("[PlayerInventoryUISetup] Testing event flow...");
         
-        // Wait for UI creation
-        StartCoroutine(DelayedTestGridItems());
+        if (PlayerInventoryManager.Instance != null && PlayerInventoryManager.Instance.FilteredInventoryItems.Count > 0)
+        {
+            // Test với inventory đầu tiên
+            var testInventory = PlayerInventoryManager.Instance.FilteredInventoryItems[0];
+            Debug.Log($"[PlayerInventoryUISetup] Testing with inventory: {testInventory.name} (ID: {testInventory.id})");
+            
+            // Simulate inventory selection
+            OnInventorySelectedFromDropdown(testInventory);
+        }
+        else
+        {
+            Debug.LogWarning("[PlayerInventoryUISetup] No inventories available for testing");
+        }
     }
     
-    private System.Collections.IEnumerator DelayedTestGridItems()
+    [ContextMenu("Test Manual Inventory Selection")]
+    public void TestManualInventorySelection()
     {
-        yield return new WaitForEndOfFrame();
+        Debug.Log("[PlayerInventoryUISetup] Testing manual inventory selection...");
         
-        Debug.Log("[PlayerInventoryUISetup] Testing Grid Items creation...");
-        
-        // Create test dummy items
-        List<InventoryItem> testItems = new List<InventoryItem>();
-        for (int i = 1; i <= 5; i++)
+        if (PlayerInventoryManager.Instance != null && PlayerInventoryManager.Instance.FilteredInventoryItems.Count > 0)
         {
-            testItems.Add(new InventoryItem
-            {
-                id = $"test_item_{i}",
-                name = $"Test Item {i}",
-                type = "TestType",
-                amount = i * 2
-            });
+            // Test với inventory đầu tiên
+            var testInventory = PlayerInventoryManager.Instance.FilteredInventoryItems[0];
+            Debug.Log($"[PlayerInventoryUISetup] Manually selecting inventory: {testInventory.name}");
+            
+            // Gọi PlayerInventoryManager trực tiếp
+            PlayerInventoryManager.Instance.SelectInventory(testInventory);
+        }
+        else
+        {
+            Debug.LogWarning("[PlayerInventoryUISetup] No inventories available for manual selection test");
+        }
+    }
+
+    [ContextMenu("Check and Fix Event Registration")]
+    public void CheckAndFixEventRegistration()
+    {
+        Debug.Log("[PlayerInventoryUISetup] Checking and fixing event registration...");
+        
+        bool needsFix = false;
+        
+        // Kiểm tra PlayerInventoryManager
+        if (PlayerInventoryManager.Instance == null)
+        {
+            Debug.LogError("[PlayerInventoryUISetup] PlayerInventoryManager.Instance is null!");
+            return;
         }
         
-        // Force populate Grid Items
-        Debug.Log($"[PlayerInventoryUISetup] Creating {testItems.Count} test Grid Items...");
-        PopulateAllInventoryItems(testItems);
+        // Kiểm tra xem có đang load không
+        if (PlayerInventoryManager.Instance.IsLoadingInventoryItems())
+        {
+            Debug.Log("[PlayerInventoryUISetup] PlayerInventoryManager is currently loading items, waiting...");
+            StartCoroutine(WaitForLoadingComplete());
+            return;
+        }
         
-        // Debug result
-        Debug.Log($"[PlayerInventoryUISetup] Test completed. Grid Items created: {inventoryItems.Count}");
-        DebugCurrentState();
+        // Kiểm tra xem có inventory được chọn và có items không
+        if (!string.IsNullOrEmpty(PlayerInventoryManager.Instance.GetSelectedInventoryId()))
+        {
+            if (PlayerInventoryManager.Instance.InventoryItems.Count == 0)
+            {
+                Debug.Log("[PlayerInventoryUISetup] Selected inventory has no items, this might be the issue!");
+                needsFix = true;
+            }
+            else
+            {
+                Debug.Log($"[PlayerInventoryUISetup] Selected inventory has {PlayerInventoryManager.Instance.InventoryItems.Count} items");
+                
+                // Kiểm tra xem UI đã hiển thị items chưa
+                if (inventoryItems.Count == 0)
+                {
+                    Debug.Log("[PlayerInventoryUISetup] UI has no displayed items but PlayerInventoryManager has data - fixing...");
+                    needsFix = true;
+                }
+            }
+        }
+        else
+        {
+            Debug.Log("[PlayerInventoryUISetup] No inventory is currently selected");
+        }
+        
+        // Apply fix if needed
+        if (needsFix)
+        {
+            Debug.Log("[PlayerInventoryUISetup] Applying fix...");
+            
+            // Re-register events
+            SetupEventListeners();
+            
+            // Check for existing data
+            CheckForExistingInventoryData();
+            
+            // Force refresh if needed
+            if (PlayerInventoryManager.Instance.FilteredInventoryItems.Count == 0)
+            {
+                Debug.Log("[PlayerInventoryUISetup] No filtered inventories, forcing refresh...");
+                ForceRefreshInventoryData();
+            }
+        }
+        else
+        {
+            Debug.Log("[PlayerInventoryUISetup] Event registration looks good!");
+        }
+    }
+    
+    private IEnumerator WaitForLoadingComplete()
+    {
+        Debug.Log("[PlayerInventoryUISetup] Waiting for loading to complete...");
+        
+        while (PlayerInventoryManager.Instance != null && PlayerInventoryManager.Instance.IsLoadingInventoryItems())
+        {
+            yield return new WaitForSeconds(0.1f);
+        }
+        
+        Debug.Log("[PlayerInventoryUISetup] Loading completed, checking event registration...");
+        CheckAndFixEventRegistration();
     }
 
     #region UI Creation Helper Methods
@@ -1256,7 +1401,18 @@ public class PlayerInventoryUISetup : MonoBehaviour
         backRect.anchoredPosition = new Vector2(320, -20);
         backRect.sizeDelta = new Vector2(200, 80);
 
-        // Create Use Item button
+        // Create Shops button
+        GameObject shopsButtonGO = CreateButton("ShopsButton", "Shops", mainPanel.transform);
+        shopsButton = shopsButtonGO.GetComponent<Button>();
+        
+        RectTransform shopsRect = shopsButton.GetComponent<RectTransform>();
+        shopsRect.anchorMin = new Vector2(0, 1);
+        shopsRect.anchorMax = new Vector2(0, 1);
+        shopsRect.pivot = new Vector2(0, 1);
+        shopsRect.anchoredPosition = new Vector2(530, -20);
+        shopsRect.sizeDelta = new Vector2(150, 80);
+
+        // Create Use Item button - moved to the right to avoid overlap
         GameObject useButtonGO = CreateButton("UseItemButton", "Use Item", mainPanel.transform);
         useItemButton = useButtonGO.GetComponent<Button>();
         useItemButton.interactable = false;
@@ -1265,7 +1421,7 @@ public class PlayerInventoryUISetup : MonoBehaviour
         useRect.anchorMin = new Vector2(0, 1);
         useRect.anchorMax = new Vector2(0, 1);
         useRect.pivot = new Vector2(0, 1);
-        useRect.anchoredPosition = new Vector2(530, -20);
+        useRect.anchoredPosition = new Vector2(690, -20);
         useRect.sizeDelta = new Vector2(150, 80);
 
         // Create Refresh button
@@ -1366,13 +1522,13 @@ public class PlayerInventoryUISetup : MonoBehaviour
         scrollRect.vertical = true;
         scrollRect.scrollSensitivity = 10f;
 
-        // Add Grid Layout Group - Updated for new 400x150 item size
+        // Add Grid Layout Group - Updated for new 400x200 item size
         GridLayoutGroup layoutGroup = contentGO.AddComponent<GridLayoutGroup>();
-        layoutGroup.cellSize = new Vector2(400, 150); // Match new item size
+        layoutGroup.cellSize = new Vector2(400, 200); // Match new item size
         layoutGroup.spacing = new Vector2(15, 15);
         layoutGroup.padding = new RectOffset(15, 15, 15, 15);
         layoutGroup.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-        layoutGroup.constraintCount = 2; // Changed from 4 to 2 for larger items
+        layoutGroup.constraintCount = 3; // Changed from 2 to 3 for inventory items
 
         // Add Content Size Fitter
         ContentSizeFitter sizeFitter = contentGO.AddComponent<ContentSizeFitter>();
@@ -1450,10 +1606,10 @@ public class PlayerInventoryUISetup : MonoBehaviour
 
     private void CreateInventoryItemPrefab()
     {
-        // Create inventory item prefab as a 400x150 button - same size as ShopUISetup
+        // Create inventory item prefab as a 400x200 button - increased height for better text fit
         GameObject itemPrefab = CreateUIElement("InventoryItemPrefab", null);
         RectTransform itemRect = itemPrefab.GetComponent<RectTransform>();
-        itemRect.sizeDelta = new Vector2(400, 150);
+        itemRect.sizeDelta = new Vector2(400, 200);
 
         // Add background image
         Image itemBg = itemPrefab.AddComponent<Image>();
@@ -1580,6 +1736,31 @@ public class PlayerInventoryUISetup : MonoBehaviour
             PlayerInventoryManager.Instance.OnInventorySelectedFromDropdown -= OnInventorySelectedFromDropdown;
             
             Debug.Log("[PlayerInventoryUISetup] Unsubscribed from all PlayerInventoryManager events");
+        }
+    }
+
+    /// <summary>
+    /// Kiểm tra xem PlayerInventoryManager đã có data sẵn chưa
+    /// Nếu có thì hiển thị ngay lập tức
+    /// </summary>
+    private void CheckForExistingInventoryData()
+    {
+        if (PlayerInventoryManager.Instance != null)
+        {
+            // Kiểm tra xem có inventory được chọn và có items không
+            if (!string.IsNullOrEmpty(PlayerInventoryManager.Instance.GetSelectedInventoryId()) &&
+                PlayerInventoryManager.Instance.InventoryItems.Count > 0)
+            {
+                // Có data sẵn, hiển thị ngay
+                selectedInventory = PlayerInventoryManager.Instance.FilteredInventoryItems
+                    .FirstOrDefault(item => item.id == PlayerInventoryManager.Instance.GetSelectedInventoryId());
+                
+                if (selectedInventory != null)
+                {
+                    Debug.Log($"[PlayerInventoryUISetup] Found existing inventory data for '{selectedInventory.name}', displaying immediately");
+                    OnInventoryItemsLoaded(PlayerInventoryManager.Instance.InventoryItems);
+                }
+            }
         }
     }
 } 

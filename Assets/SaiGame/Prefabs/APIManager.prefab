@@ -94,6 +94,7 @@ MonoBehaviour:
   showDebugLog: 1
   autoLoad: 1
   playerItems: []
+  chooseItem: 
 --- !u!1 &5429511496161679507
 GameObject:
   m_ObjectHideFlags: 0
@@ -195,6 +196,50 @@ MonoBehaviour:
   currentShopItems: []
   selectedShopIdForEditor: 
   itemProfileIdForEditor: 
+--- !u!1 &7668839032024118020
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 9222976360056067409}
+  - component: {fileID: 5988373189414259268}
+  m_Layer: 0
+  m_Name: LootBoxManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &9222976360056067409
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7668839032024118020}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7176863583007664123}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5988373189414259268
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7668839032024118020}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4d76004f18b86e4db181b92ed988513, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &8070881700813525761
 GameObject:
   m_ObjectHideFlags: 0
@@ -229,6 +274,7 @@ Transform:
   - {fileID: 8868201451236184857}
   - {fileID: 8050984747339108963}
   - {fileID: 3605935813267881035}
+  - {fileID: 9222976360056067409}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1055822729905208099

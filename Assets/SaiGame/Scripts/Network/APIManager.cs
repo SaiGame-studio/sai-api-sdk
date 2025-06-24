@@ -442,7 +442,16 @@ public class APIManager : SaiSingleton<APIManager>
                 catch (Exception e)
                 {
                     Debug.LogWarning("JSON Parse Error: " + e.Message);
-                    onComplete?.Invoke(default(T));
+                    // Nếu là LootBoxOpenResponse thì trả về object với raw text
+                    if (typeof(T).Name == "LootBoxOpenResponse")
+                    {
+                        var rawObj = new LootBoxManager.LootBoxOpenResponse { raw = request.downloadHandler.text };
+                        onComplete?.Invoke((T)(object)rawObj);
+                    }
+                    else
+                    {
+                        onComplete?.Invoke(default(T));
+                    }
                 }
             }
             else

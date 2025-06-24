@@ -340,6 +340,35 @@ public class MyItemUISetup : MonoBehaviour
         shopsRect.anchoredPosition = new Vector2(610, -20);
         shopsRect.sizeDelta = new Vector2(120, 80);
 
+        // Create Open LootBox button bên phải Shops
+        Button openLootBoxButton = CreateButton("OpenLootBoxButton", "Open\nLootBox", mainPanel.transform);
+        TextMeshProUGUI lootBoxButtonText = openLootBoxButton.GetComponentInChildren<TextMeshProUGUI>();
+        if (lootBoxButtonText != null)
+        {
+            lootBoxButtonText.alignment = TextAlignmentOptions.Center;
+            lootBoxButtonText.textWrappingMode = TextWrappingModes.PreserveWhitespace;
+        }
+        // Style giống các nút khác (màu xanh blue)
+        Image lootBoxImage = openLootBoxButton.GetComponent<Image>();
+        if (lootBoxImage != null)
+        {
+            lootBoxImage.color = new Color(0.2f, 0.6f, 1f, 1f); // Unified blue background
+        }
+        ColorBlock lootBoxCb = openLootBoxButton.colors;
+        lootBoxCb.normalColor = new Color(0.2f, 0.6f, 1f, 1f);
+        lootBoxCb.highlightedColor = new Color(0.3f, 0.7f, 1f, 1f);
+        lootBoxCb.pressedColor = new Color(0.15f, 0.5f, 0.9f, 1f);
+        openLootBoxButton.colors = lootBoxCb;
+        RectTransform lootBoxRect = openLootBoxButton.GetComponent<RectTransform>();
+        lootBoxRect.anchorMin = new Vector2(0, 1);
+        lootBoxRect.anchorMax = new Vector2(0, 1);
+        lootBoxRect.pivot = new Vector2(0, 1);
+        // Position next to the shops button: shops pos x (610) + shops width (120) + spacing (10)
+        lootBoxRect.anchoredPosition = new Vector2(740, -20);
+        lootBoxRect.sizeDelta = new Vector2(160, 80);
+        // Gán script BtnOpenLootBox vào nút này
+        openLootBoxButton.gameObject.AddComponent<BtnOpenLootBox>();
+
         // Create Refresh button and position it at top-right corner
         refreshButton = CreateButton("RefreshButton", "Refresh", mainPanel.transform);
         
@@ -547,7 +576,11 @@ public class MyItemUISetup : MonoBehaviour
     private void OnItemSelected(InventoryItem item)
     {
         ShowStatus($"Selected: {item.name} (Amount: {item.amount})");
-        //Debug.Log($"[MyItemUISetup] Selected item: {item.name}, ID: {item.id}, Amount: {item.amount}");
+        // Lưu id item vào PlayerItemManager
+        if (PlayerItemManager.Instance != null)
+        {
+            PlayerItemManager.Instance.chooseItem = item.id;
+        }
     }
 
     public void OnRefreshClick()
@@ -579,6 +612,22 @@ public class MyItemUISetup : MonoBehaviour
         {
             Debug.LogWarning("[MyItemUISetup] Shop scene name not set");
         }
+    }
+
+    // Thay vì gọi trực tiếp OpenLootBox, chỉ gọi LootBoxManager.Instance.OpenLootBoxFromUIOrEditor
+    public void OnOpenLootBoxClick()
+    {
+        string lootBoxId = PlayerItemManager.Instance != null ? PlayerItemManager.Instance.chooseItem : null;
+        ShowStatus("Đang mở loot box...");
+        LootBoxManager.Instance.OpenLootBoxFromUIOrEditor(
+            lootBoxId, 1,
+            (result) => {
+                ShowStatus($"Loot box opened!\n{result}");
+            },
+            (error) => {
+                ShowStatus($"Lỗi mở loot box: {error}");
+            }
+        );
     }
 
     private void ShowStatus(string message)
@@ -722,4 +771,4 @@ public class MyItemUISetup : MonoBehaviour
         ShowStatus($"Loaded {dummyItems.Count} dummy items (Editor Mode)");
         PopulateItems(dummyItems);
     }
-} 
+}

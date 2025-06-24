@@ -15,6 +15,9 @@ public class PlayerItemManager : SaiSingleton<PlayerItemManager>
     private List<InventoryItem> playerItems = new List<InventoryItem>();
     public List<InventoryItem> PlayerItems => playerItems;
 
+    // Biến lưu id item được chọn từ UI
+    public string chooseItem;
+
     public event Action<List<InventoryItem>> OnPlayerItemsChanged;
 
     protected override void Awake()
@@ -185,4 +188,4 @@ public class PlayerItemListResponse
     public string message;
     public string message_code;
     public List<InventoryItem> data;
-} 
+}

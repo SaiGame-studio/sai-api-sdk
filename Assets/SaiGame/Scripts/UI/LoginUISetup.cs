@@ -41,6 +41,8 @@ public class LoginUISetup : MonoBehaviour
         SetupUI();
         LoadRememberedEmail();
         CheckAutoLogin();
+        // Đảm bảo luôn ẩn loading panel khi vào scene login
+        ShowLoading(false);
     }
 
     void Reset()
@@ -649,7 +651,7 @@ public class LoginUISetup : MonoBehaviour
     /// </summary>
     private void TryFindAndLinkAPIManager()
     {
-        // Chỉ thực hiện nếu chưa có APIManager và chưa từng thử tìm
+        // Chỉ thực hiện nếu chưa có APIManager và chưa từng thử
         if (apiManager == null && !hasTriedToFindAPIManager)
         {
             hasTriedToFindAPIManager = true;
@@ -666,5 +668,27 @@ public class LoginUISetup : MonoBehaviour
                 Debug.LogError("[LoginUISetup] Failed to find APIManager in scene! Please ensure APIManager is present in the scene.");
             }
         }
+    }
+
+    void OnEnable()
+    {
+        // Đảm bảo luôn tự động liên kết lại APIManager Singleton khi scene được load lại hoặc object được enable
+        if (apiManager == null)
+        {
+            apiManager = APIManager.Instance != null ? APIManager.Instance : FindFirstObjectByType<APIManager>();
+        }
+    }
+
+    public APIManager ApiManagerAuto
+    {
+        get
+        {
+            if (apiManager == null)
+            {
+                apiManager = APIManager.Instance != null ? APIManager.Instance : FindFirstObjectByType<APIManager>();
+            }
+            return apiManager;
+        }
+        set { apiManager = value; }
     }
 }

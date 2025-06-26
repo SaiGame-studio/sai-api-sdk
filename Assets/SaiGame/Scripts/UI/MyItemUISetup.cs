@@ -4,6 +4,7 @@ using UnityEngine.EventSystems;
 using TMPro;
 using System.Collections.Generic;
 using System.Collections;
+using System.Linq;
 
 public class MyItemUISetup : MonoBehaviour
 {
@@ -66,6 +67,7 @@ public class MyItemUISetup : MonoBehaviour
 
     // Private variables for tracking UI elements
     private List<GameObject> itemObjects = new List<GameObject>();
+    private ItemType? currentFilterType = null;
 
     void Start()
     {
@@ -432,6 +434,63 @@ public class MyItemUISetup : MonoBehaviour
         {
             LoadDummyData();
         }
+        
+        // Tạo group chứa các button filter ở hàng dưới các button chính
+        GameObject filterGroup = CreateUIElement("ItemTypeFilterGroup", mainPanel.transform);
+        RectTransform filterGroupRect = filterGroup.GetComponent<RectTransform>();
+        // Đặt anchorMin/anchorMax để cạnh trái filterGroup thẳng với titleText (anchorMin.x = 0.05)
+        filterGroupRect.anchorMin = new Vector2(0.05f, 0.78f); // Dưới hàng button chính, dịch phải
+        filterGroupRect.anchorMax = new Vector2(0.95f, 0.83f);
+        filterGroupRect.offsetMin = Vector2.zero;
+        filterGroupRect.offsetMax = Vector2.zero;
+        filterGroupRect.pivot = new Vector2(0, 1);
+
+        HorizontalLayoutGroup hLayout = filterGroup.AddComponent<HorizontalLayoutGroup>();
+        hLayout.spacing = 10f;
+        hLayout.childForceExpandWidth = false;
+        hLayout.childForceExpandHeight = true;
+        hLayout.childAlignment = TextAnchor.MiddleLeft;
+        hLayout.padding = new RectOffset(0, 0, 0, 0);
+
+        // Style cho các button filter giống các button chính
+        Color filterBtnColor = new Color(0.2f, 0.6f, 1f, 1f);
+        Color filterBtnHighlight = new Color(0.3f, 0.7f, 1f, 1f);
+        Color filterBtnPressed = new Color(0.15f, 0.5f, 0.9f, 1f);
+        Color filterBtnSelected = Color.yellow;
+
+        // Button "Tất cả"
+        Button allBtn = CreateButton("TypeBtn_AllType", "Show All", filterGroup.transform);
+        SetButtonColors(allBtn, filterBtnColor, filterBtnHighlight, filterBtnPressed);
+        // Gắn BtnMyItemFilter cho button "Tất cả"
+        var allBtnFilter = allBtn.gameObject.AddComponent<BtnMyItemFilter>();
+        allBtnFilter.filterType = null;
+        allBtn.onClick.AddListener(() => OnFilterButtonClicked(null));
+        // Đặt lại chiều rộng cố định cho button
+        var allBtnRect = allBtn.GetComponent<RectTransform>();
+        allBtnRect.sizeDelta = new Vector2(140, 60);
+        var allBtnText = allBtn.GetComponentInChildren<TextMeshProUGUI>();
+        if (allBtnText != null) allBtnText.alignment = TextAlignmentOptions.Center;
+
+        // Các button cho từng ItemType
+        foreach (var type in System.Enum.GetValues(typeof(ItemType)))
+        {
+            var typeVal = (ItemType)type;
+            Button btn = CreateButton($"TypeBtn_{typeVal}", typeVal.ToString(), filterGroup.transform);
+            SetButtonColors(btn, currentFilterType == typeVal ? filterBtnSelected : filterBtnColor, filterBtnHighlight, filterBtnPressed);
+            // Gắn BtnMyItemFilter cho từng button filter
+            var btnFilter = btn.gameObject.AddComponent<BtnMyItemFilter>();
+            btnFilter.filterType = typeVal;
+            btn.onClick.AddListener(() => OnFilterButtonClicked(typeVal.ToString()));
+            var btnRect = btn.GetComponent<RectTransform>();
+            btnRect.sizeDelta = new Vector2(160, 60);
+            var btnText = btn.GetComponentInChildren<TextMeshProUGUI>();
+            if (btnText != null) btnText.alignment = TextAlignmentOptions.Center;
+        }
+        // Dời Grid Item xuống để tránh đè lên filter
+        scrollRect.anchorMin = new Vector2(0.05f, 0.10f); // thấp hơn
+        scrollRect.anchorMax = new Vector2(0.95f, 0.75f); // thấp hơn
+        scrollRect.offsetMin = Vector2.zero;
+        scrollRect.offsetMax = Vector2.zero;
     }
 
     private void CreateItemPrefab()
@@ -477,6 +536,9 @@ public class MyItemUISetup : MonoBehaviour
         colors.pressedColor = new Color(0.2f, 0.2f, 0.2f, 0.8f);
         button.colors = colors;
 
+        // Gắn BtnMyItemPrefab
+        itemPrefab.AddComponent<BtnMyItemPrefab>();
+
         itemPrefab.SetActive(false);
     }
 
@@ -513,8 +575,10 @@ public class MyItemUISetup : MonoBehaviour
             return;
         }
 
-        ShowStatus($"Loaded {items.Count} items");
-        PopulateItems(items);
+        // Áp dụng filter nếu có
+        var filtered = ItemTypeFilter.FilterByType(items, currentFilterType);
+        ShowStatus($"Loaded {filtered.Count} items");
+        PopulateItems(filtered);
     }
 
     private void PopulateItems(List<InventoryItem> items)
@@ -532,6 +596,13 @@ public class MyItemUISetup : MonoBehaviour
             GameObject itemObj = Instantiate(itemPrefab, itemContainer);
             itemObj.SetActive(true);
 
+            // Gắn dữ liệu vào BtnMyItemPrefab
+            var btnMyItemPrefab = itemObj.GetComponent<BtnMyItemPrefab>();
+            if (btnMyItemPrefab != null)
+            {
+                btnMyItemPrefab.SetData(item);
+            }
+
             // Set item name
             TextMeshProUGUI nameText = itemObj.transform.Find("NameText").GetComponent<TextMeshProUGUI>();
             nameText.text = item.name;
@@ -540,7 +611,7 @@ public class MyItemUISetup : MonoBehaviour
             TextMeshProUGUI amountText = itemObj.transform.Find("AmountText").GetComponent<TextMeshProUGUI>();
             amountText.text = $"Amount: {item.amount}";
 
-            // Add click handler
+            // Add click handler (giữ lại để tương thích)
             Button itemButton = itemObj.GetComponent<Button>();
             itemButton.onClick.AddListener(() => OnItemSelected(item));
 
@@ -573,7 +644,7 @@ public class MyItemUISetup : MonoBehaviour
         itemObjects.Clear();
     }
 
-    private void OnItemSelected(InventoryItem item)
+    public void OnItemSelected(InventoryItem item)
     {
         ShowStatus($"Selected: {item.name} (Amount: {item.amount})");
         // Lưu id item vào PlayerItemManager
@@ -645,6 +716,14 @@ public class MyItemUISetup : MonoBehaviour
         {
             loadingPanel.SetActive(show);
         }
+    }
+
+    // Thêm hàm để set filter từ UI (ví dụ dropdown)
+    public void SetItemTypeFilter(ItemType? type)
+    {
+        currentFilterType = type;
+        // Sau khi set filter, reload lại danh sách
+        LoadPlayerItems();
     }
 
     [ContextMenu("Test Refresh")]
@@ -770,5 +849,33 @@ public class MyItemUISetup : MonoBehaviour
 
         ShowStatus($"Loaded {dummyItems.Count} dummy items (Editor Mode)");
         PopulateItems(dummyItems);
+    }
+
+    // Đảm bảo filter button click luôn hoạt động đúng
+    public void OnFilterButtonClicked(string type)
+    {
+        string filterTypeStr = null;
+        ItemTypeExtensions.TryParseItemType(type, out var parsedType);
+        filterTypeStr = ItemTypeExtensions.ToItemTypeString(parsedType);
+        for (int i = 0; i < itemContainer.childCount; i++)
+        {
+            var itemObj = itemContainer.GetChild(i).gameObject;
+            BtnMyItemPrefab btnMyItemPrefab = itemObj.GetComponent<BtnMyItemPrefab>();
+            string itemTypeStr = btnMyItemPrefab.itemData.type?.ToString() ?? string.Empty;
+            bool show = filterTypeStr == null || itemTypeStr.Contains(filterTypeStr);
+            itemObj.SetActive(show);
+        }
+    }
+
+    // Helper để set màu cho button
+    private void SetButtonColors(Button btn, Color normal, Color highlight, Color pressed)
+    {
+        var colors = btn.colors;
+        colors.normalColor = normal;
+        colors.highlightedColor = highlight;
+        colors.pressedColor = pressed;
+        btn.colors = colors;
+        var img = btn.GetComponent<Image>();
+        if (img != null) img.color = normal;
     }
 }

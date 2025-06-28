@@ -24,7 +24,6 @@ public static class ItemTypeFilter
             case ItemType.Currency: return "currency";
             case ItemType.Misc: return "misc";
             case ItemType.LootBox: return "loot_box";
-            case ItemType.FixLootBox: return "fix_loot_box";
             default: return string.Empty;
         }
     }

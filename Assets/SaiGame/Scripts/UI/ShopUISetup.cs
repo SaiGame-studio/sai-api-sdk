@@ -10,9 +10,6 @@ public class ShopUISetup : MonoBehaviour
     [Header("Auto Setup UI")]
     public bool autoSetup = true;
 
-    [Header("APIManager Integration")]
-    public APIManager apiManager;
-
     [Header("UI References (Auto-assigned)")]
     [SerializeField] public Transform shopItemContainer;
     [SerializeField] public GameObject shopItemPrefab;
@@ -71,12 +68,6 @@ public class ShopUISetup : MonoBehaviour
 
     void Start()
     {
-        // Tự động tìm và liên kết APIManager
-        if (apiManager == null)
-        {
-            apiManager = APIManager.Instance;
-        }
-
         if (autoSetup)
         {
             CreateShopUI();

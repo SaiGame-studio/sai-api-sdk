@@ -16,8 +16,6 @@ public enum ItemType
     Misc,
     [Description("loot_box")]
     LootBox,
-    [Description("fix_loot_box")]
-    FixLootBox
 }
 
 public static class ItemTypeExtensions

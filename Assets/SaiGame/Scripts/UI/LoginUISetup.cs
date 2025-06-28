@@ -9,9 +9,6 @@ public class LoginUISetup : MonoBehaviour
     [Header("Auto Setup UI")]
     public bool autoSetup = true;
 
-    [Header("APIManager Integration")]
-    public APIManager apiManager;
-
     [Header("UI References (Auto-assigned)")]
     [SerializeField] public TMP_InputField emailInput;
     [SerializeField] public TMP_InputField passwordInput;
@@ -30,9 +27,6 @@ public class LoginUISetup : MonoBehaviour
 
     void Start()
     {
-        // Tự động tìm và liên kết APIManager nếu chưa có
-        TryFindAndLinkAPIManager();
-
         if (autoSetup)
         {
             CreateLoginUI();
@@ -223,25 +217,6 @@ public class LoginUISetup : MonoBehaviour
         // Create loading text với font lớn hơn nữa
         GameObject loadingText = CreateText("LoadingText", "Processing...", loadingPanelGO.transform, 40); // Tăng từ 32 lên 40
         loadingText.GetComponent<TextMeshProUGUI>().color = Color.white;
-
-        // Setup APIManager reference
-        if (apiManager == null)
-        {
-            // Tìm APIManager hiện có trước
-            apiManager = FindFirstObjectByType<APIManager>();
-            if (apiManager == null)
-            {
-                // Chỉ tạo mới nếu không tìm thấy
-                GameObject apiManagerGO = new GameObject("APIManager");
-                apiManager = apiManagerGO.AddComponent<APIManager>();
-                Debug.Log("[LoginUISetup] APIManager created.");
-            }
-            else
-            {
-                Debug.Log("[LoginUISetup] Found existing APIManager.");
-            }
-        }
-
         Debug.Log("Login UI created successfully!");
     }
 
@@ -265,9 +240,9 @@ public class LoginUISetup : MonoBehaviour
 
     private void LoadRememberedEmail()
     {
-        if (apiManager != null)
+        if (APIManager.Instance != null)
         {
-            string rememberedEmail = apiManager.GetRememberedEmail();
+            string rememberedEmail = APIManager.Instance.GetRememberedEmail();
             if (!string.IsNullOrEmpty(rememberedEmail) && emailInput != null)
             {
                 emailInput.text = rememberedEmail;
@@ -277,15 +252,14 @@ public class LoginUISetup : MonoBehaviour
 
     private void CheckAutoLogin()
     {
-        if (apiManager != null)
+        if (APIManager.Instance != null)
         {
-            string savedToken = apiManager.GetAuthToken();
+            string savedToken = APIManager.Instance.GetAuthToken();
             if (!string.IsNullOrEmpty(savedToken))
             {
                 ShowStatus("Checking saved session...");
                 ShowLoading(true);
-
-                apiManager.VerifyToken(OnAutoLoginComplete);
+                APIManager.Instance.VerifyToken(OnAutoLoginComplete);
             }
         }
     }
@@ -299,15 +273,14 @@ public class LoginUISetup : MonoBehaviour
         {
             // Token hợp lệ và chưa hết hạn
             ShowStatus("Login successful!");
-
             LoadGameScene();
         }
         else
         {
             // Token không hợp lệ hoặc đã hết hạn
-            if (apiManager != null)
+            if (APIManager.Instance != null)
             {
-                apiManager.ClearAuthToken();
+                APIManager.Instance.ClearAuthToken();
             }
             if (tokenInfo != null && !tokenInfo.IsValid())
             {
@@ -340,9 +313,9 @@ public class LoginUISetup : MonoBehaviour
         ShowLoading(true);
         ShowStatus("Logging in...");
 
-        if (apiManager != null)
+        if (APIManager.Instance != null)
         {
-            apiManager.LoginWithToken(email, password, OnLoginComplete);
+            APIManager.Instance.LoginWithToken(email, password, OnLoginComplete);
         }
         else
         {
@@ -359,20 +332,17 @@ public class LoginUISetup : MonoBehaviour
         {
             // Debug thông tin token sau khi login
             DebugTokenInfo();
-            
             // APIManager đã tự động lưu token với expire info trong LoginWithToken
             // Không cần gọi SetAuthToken thêm lần nữa
-            
             // Lưu email để ghi nhớ cho lần đăng nhập tiếp theo
             string email = emailInput?.text ?? "";
             if (!string.IsNullOrEmpty(email))
             {
-                apiManager.SaveRememberedEmail(email);
+                APIManager.Instance.SaveRememberedEmail(email);
                 Debug.Log($"[LoginUISetup] Saved remembered email: {email}");
             }
-            
             ShowLoading(true);
-            apiManager.RegisterProfileForCurrentUser((profileResponse) =>
+            APIManager.Instance.RegisterProfileForCurrentUser((profileResponse) =>
             {
                 ShowLoading(false);
                 if (profileResponse != null && profileResponse.status == "success")
@@ -396,7 +366,7 @@ public class LoginUISetup : MonoBehaviour
     // Debug method để kiểm tra thông tin token
     private void DebugTokenInfo()
     {
-        if (apiManager != null)
+        if (APIManager.Instance != null)
         {
             // Sử dụng reflection để truy cập các field private của APIManager
             var tokenExpiresAtField = typeof(APIManager).GetField("tokenExpiresAt", 
@@ -405,21 +375,18 @@ public class LoginUISetup : MonoBehaviour
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             var currentTokenField = typeof(APIManager).GetField("currentToken", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            
             if (tokenExpiresAtField != null && tokenExpiresInField != null && currentTokenField != null)
             {
-                long expiresAt = (long)tokenExpiresAtField.GetValue(apiManager);
-                int expiresIn = (int)tokenExpiresInField.GetValue(apiManager);
-                string currentToken = (string)currentTokenField.GetValue(apiManager);
-                
+                long expiresAt = (long)tokenExpiresAtField.GetValue(APIManager.Instance);
+                int expiresIn = (int)tokenExpiresInField.GetValue(APIManager.Instance);
+                string currentToken = (string)currentTokenField.GetValue(APIManager.Instance);
                 Debug.Log($"[LoginUISetup] Debug Token Info:");
                 Debug.Log($"[LoginUISetup] - Current Token: {(string.IsNullOrEmpty(currentToken) ? "null" : currentToken.Substring(0, 20) + "...")}");
                 Debug.Log($"[LoginUISetup] - Token Expires At: {expiresAt}");
                 Debug.Log($"[LoginUISetup] - Token Expires In: {expiresIn}");
             }
-            
             // Force update token display info
-            apiManager.UpdateTokenDisplayInfo();
+            APIManager.Instance.UpdateTokenDisplayInfo();
         }
     }
 
@@ -480,10 +447,10 @@ public class LoginUISetup : MonoBehaviour
     [ContextMenu("Test Login Direct")]
     public void TestLoginDirect()
     {
-        if (apiManager != null)
+        if (APIManager.Instance != null)
         {
             Debug.Log("[LoginUISetup] Testing direct login with APIManager...");
-            apiManager.LoginWithToken("test@example.com", "password", (response) =>
+            APIManager.Instance.LoginWithToken("test@example.com", "password", (response) =>
             {
                 Debug.Log($"[LoginUISetup] Direct login result: {(response != null ? "Success" : "Failed")}");
                 if (response != null)
@@ -524,20 +491,16 @@ public class LoginUISetup : MonoBehaviour
     [ContextMenu("Compare Token Info")]
     public void CompareTokenInfo()
     {
-        if (apiManager != null)
+        if (APIManager.Instance != null)
         {
             Debug.Log("[LoginUISetup] === Token Info Comparison ===");
-            
             // Lấy thông tin từ APIManager
-            string currentToken = apiManager.GetAuthToken();
-            bool hasValidToken = apiManager.HasValidToken();
-            
+            string currentToken = APIManager.Instance.GetAuthToken();
+            bool hasValidToken = APIManager.Instance.HasValidToken();
             Debug.Log($"[LoginUISetup] APIManager.GetAuthToken(): {(string.IsNullOrEmpty(currentToken) ? "null" : currentToken.Substring(0, 20) + "...")}");
             Debug.Log($"[LoginUISetup] APIManager.HasValidToken(): {hasValidToken}");
-            
             // Debug internal token info
             DebugTokenInfo();
-            
             Debug.Log("[LoginUISetup] === End Comparison ===");
         }
         else
@@ -643,52 +606,5 @@ public class LoginUISetup : MonoBehaviour
         rect.anchorMax = Vector2.one;
         rect.offsetMin = Vector2.zero;
         rect.offsetMax = Vector2.zero;
-    }
-
-    /// <summary>
-    /// Tự động tìm và liên kết APIManager nếu chưa có liên kết
-    /// Chỉ thực hiện một lần duy nhất khi start game
-    /// </summary>
-    private void TryFindAndLinkAPIManager()
-    {
-        // Chỉ thực hiện nếu chưa có APIManager và chưa từng thử
-        if (apiManager == null && !hasTriedToFindAPIManager)
-        {
-            hasTriedToFindAPIManager = true;
-            
-            // Tìm APIManager trong scene
-            APIManager foundAPIManager = FindFirstObjectByType<APIManager>();
-            
-            if (foundAPIManager != null)
-            {
-                apiManager = foundAPIManager;
-            }
-            else
-            {
-                Debug.LogError("[LoginUISetup] Failed to find APIManager in scene! Please ensure APIManager is present in the scene.");
-            }
-        }
-    }
-
-    void OnEnable()
-    {
-        // Đảm bảo luôn tự động liên kết lại APIManager Singleton khi scene được load lại hoặc object được enable
-        if (apiManager == null)
-        {
-            apiManager = APIManager.Instance != null ? APIManager.Instance : FindFirstObjectByType<APIManager>();
-        }
-    }
-
-    public APIManager ApiManagerAuto
-    {
-        get
-        {
-            if (apiManager == null)
-            {
-                apiManager = APIManager.Instance != null ? APIManager.Instance : FindFirstObjectByType<APIManager>();
-            }
-            return apiManager;
-        }
-        set { apiManager = value; }
     }
 }

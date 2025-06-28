@@ -39,7 +39,7 @@ public class APIManager : SaiSingleton<APIManager>
     [SerializeField] protected int tokenExpiresIn = 0;   // Seconds
 
     [Header("Game Info")]
-    [SerializeField] protected string gameId = "68482e25731d20624900f952"; // UUID, chỉnh trong Inspector
+    [SerializeField] protected string gameId = "685f56094b7ca62f6607117d"; // UUID, chỉnh trong Inspector
     public string GameId => gameId;
 
     protected override void Awake()
@@ -484,6 +484,16 @@ public class APIManager : SaiSingleton<APIManager>
             }
 
             yield return request.SendWebRequest();
+
+            // Check for token expired (HTTP 401)
+            if (request.responseCode == 401 || (request.result == UnityWebRequest.Result.ProtocolError && request.downloadHandler.text.ToLower().Contains("token expired")))
+            {
+                Debug.LogWarning("Token expired or unauthorized. Redirecting to login scene.");
+                ClearAuthToken();
+                NavigateToLoginScene();
+                onComplete?.Invoke(default(T));
+                yield break;
+            }
 
             if (request.result == UnityWebRequest.Result.Success)
             {

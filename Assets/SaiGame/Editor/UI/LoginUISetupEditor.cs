@@ -52,28 +52,6 @@ public class LoginUISetupEditor : Editor
         
         if (Application.isPlaying)
         {
-            // Show current APIManager status
-            APIManager apiManager = loginUISetup.apiManager;
-            if (apiManager != null)
-            {
-                bool hasToken = apiManager.HasValidToken();
-                string statusText = hasToken ? "User is logged in" : "No active session";
-                EditorGUILayout.LabelField("APIManager Status:", statusText);
-                
-                if (hasToken)
-                {
-                    string currentToken = apiManager.GetAuthToken();
-                    string tokenPreview = !string.IsNullOrEmpty(currentToken) && currentToken.Length > 20 
-                        ? currentToken.Substring(0, 20) + "..." 
-                        : currentToken;
-                    EditorGUILayout.LabelField("Token:", tokenPreview);
-                }
-            }
-            else
-            {
-                EditorGUILayout.HelpBox("APIManager not assigned!", MessageType.Warning);
-            }
-            
             GUILayout.Space(10);
             
             // Quick Actions Section + Go to Register
@@ -121,39 +99,6 @@ public class LoginUISetupEditor : Editor
         
         GUILayout.Space(10);
         
-        // APIManager Integration Section
-        EditorGUILayout.LabelField("APIManager Integration", EditorStyles.boldLabel);
-        
-        if (loginUISetup.apiManager == null)
-        {
-            EditorGUILayout.HelpBox("APIManager is not assigned. The UI will try to find or create one automatically.", MessageType.Warning);
-            
-            // Find APIManager button - Màu xanh dương nhạt
-            GUI.backgroundColor = new Color(0.4f, 0.6f, 1f, 1f); // Xanh dương nhạt
-            if (GUILayout.Button("Find APIManager", GUILayout.Height(25)))
-            {
-                APIManager foundManager = FindFirstObjectByType<APIManager>();
-                if (foundManager != null)
-                {
-                    SerializedProperty apiManagerProp = serializedObject.FindProperty("apiManager");
-                    apiManagerProp.objectReferenceValue = foundManager;
-                    serializedObject.ApplyModifiedProperties();
-                    Debug.Log("[LoginUISetupEditor] APIManager found and assigned.");
-                }
-                else
-                {
-                    Debug.LogWarning("[LoginUISetupEditor] No APIManager found in scene.");
-                }
-            }
-            GUI.backgroundColor = Color.white;
-        }
-        else
-        {
-            EditorGUILayout.HelpBox("APIManager is properly assigned.", MessageType.Info);
-        }
-        
-        // UI Status Section
-        GUILayout.Space(10);
         EditorGUILayout.LabelField("UI Status", EditorStyles.boldLabel);
         
         Canvas existingCanvas = FindFirstObjectByType<Canvas>();

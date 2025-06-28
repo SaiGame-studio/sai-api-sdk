@@ -11,9 +11,6 @@ public class MyItemUISetup : MonoBehaviour
     [Header("Auto Setup UI")]
     public bool autoSetup = true;
 
-    [Header("APIManager Integration")]
-    public APIManager apiManager;
-
     [Header("UI References (Auto-assigned)")]
     [SerializeField] public Transform itemContainer;
     [SerializeField] public GameObject itemPrefab;
@@ -76,12 +73,6 @@ public class MyItemUISetup : MonoBehaviour
         {
             ClearItems();
             showDummyData = false; // Disable dummy data in play mode
-        }
-
-        // Tự động tìm và liên kết APIManager một lần duy nhất
-        if (apiManager == null)
-        {
-            apiManager = APIManager.Instance;
         }
 
         if (autoSetup)

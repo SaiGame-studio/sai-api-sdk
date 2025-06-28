@@ -19,9 +19,6 @@ public class PlayerInventoryUISetup : MonoBehaviour
     [Header("Auto Setup UI")]
     public bool autoSetup = true;
 
-    [Header("APIManager Integration")]
-    public APIManager apiManager;
-
     [Header("UI References - Inventory Items (Right Panel)")]
     [SerializeField] public Transform inventoryItemContainer;
     [SerializeField] public GameObject inventoryItemPrefab;
@@ -110,10 +107,6 @@ public class PlayerInventoryUISetup : MonoBehaviour
 
     void Start()
     {
-        // Tự động tìm và liên kết APIManager
-        if (apiManager == null)
-            apiManager = APIManager.Instance;
-
         // Auto setup UI nếu được bật
         if (autoSetup)
         {

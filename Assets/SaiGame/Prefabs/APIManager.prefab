@@ -240,6 +240,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d4d76004f18b86e4db181b92ed988513, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  lootBoxId: 
+  quantity: 1
 --- !u!1 &8070881700813525761
 GameObject:
   m_ObjectHideFlags: 0
@@ -292,15 +294,15 @@ MonoBehaviour:
   baseURL: https://local-api.saigame.studio/api
   showDebugLog: 1
   storageType: 0
-  rememberedEmail: 113@113.1131
+  rememberedEmail: user_e9b18edd_72fd_426c_8af5_7da688f03f54@example.com
   rememberEmailEnabled: 1
-  currentTokenDisplay: 272|IcatQU...61e0a4d888
+  currentTokenDisplay: 31|cIvKUSi...Jef2573171
   hasValidTokenDisplay: 1
   tokenStorageTypeDisplay: EncryptedPlayerPrefs
-  tokenLengthDisplay: 52
+  tokenLengthDisplay: 51
   isTokenExpired: 0
   timeUntilExpire: N/A
-  currentToken: 272|IcatQUdcun5DxOlOHbyT697XvkFmtgaXKFLsgo61e0a4d888
+  currentToken: 31|cIvKUSiNl8MMcsVHuRx4nT5dsrYzpNSPmox5sMJef2573171
   tokenExpiresAt: 0
   tokenExpiresIn: 0
-  gameId: 68482e25731d20624900f952
+  gameId: 685f56094b7ca62f6607117d

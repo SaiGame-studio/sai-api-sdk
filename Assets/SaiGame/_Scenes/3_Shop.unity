@@ -3478,7 +3478,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   autoSetup: 1
-  apiManager: {fileID: 1331418473}
+  apiManager: {fileID: 0}
   shopItemContainer: {fileID: 1690624782}
   shopItemPrefab: {fileID: 1583158233}
   refreshButton: {fileID: 119917966}
@@ -6874,17 +6874,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1328030322}
   m_CullTransparentMesh: 1
---- !u!114 &1331418473 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1055822729905208099, guid: 45192b4401665724fbbd74ca57cd25ed, type: 3}
-  m_PrefabInstance: {fileID: 270185651}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8a170214ba3e2aa44900c6fa5576bd82, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &1331711323
 GameObject:
   m_ObjectHideFlags: 0

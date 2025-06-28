@@ -485,6 +485,16 @@ public class APIManager : SaiSingleton<APIManager>
 
             yield return request.SendWebRequest();
 
+            // Check for token expired (HTTP 401)
+            if (request.responseCode == 401 || (request.result == UnityWebRequest.Result.ProtocolError && request.downloadHandler.text.ToLower().Contains("token expired")))
+            {
+                Debug.LogWarning("Token expired or unauthorized. Redirecting to login scene.");
+                ClearAuthToken();
+                NavigateToLoginScene();
+                onComplete?.Invoke(default(T));
+                yield break;
+            }
+
             if (request.result == UnityWebRequest.Result.Success)
             {
                 try
